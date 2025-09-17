@@ -373,7 +373,8 @@
                 .chart-container { height: 300px !important; }
                 body { background: white !important; }
             }
-        </style></head>
+        </style>
+    </head>
 <body>
     <div class="header">
         <div class="container">
@@ -396,6 +397,9 @@
                 </button>
                 <button class="nav-btn" onclick="showPage('records')" role="tab" tabindex="-1">
                     <i class="fas fa-trophy"></i> الأرقام القياسية
+                </button>
+                <button class="nav-btn" onclick="showPage('seasonsComparison')" role="tab" tabindex="-1">
+                    <i class="fas fa-chart-line"></i> مقارنة المواسم
                 </button>
                 <button class="nav-btn" onclick="showPage('overall')" role="tab" tabindex="-1">
                     <i class="fas fa-chart-line"></i> النتائج الإجمالية
@@ -636,9 +640,9 @@
                 </div>
             </div>
 
-            <!-- Overall Results Page -->
-            <div id="overall" class="page">
-                <div class="stats-grid" id="overallStats">
+            <!-- seasonsComparison Results Page -->
+            <div id="seasonsComparison" class="page">
+                <div class="stats-grid" id="seasonsComparisonStats">
                 <div class="stat-card">
                     <h3>10</h3>
                     <p>إجمالي المشاركين</p>
@@ -661,6 +665,23 @@
                     <h2><i class="fas fa-chart-line"></i> مقارنة المواسم</h2>
                     <div class="chart-container">
                         <canvas id="seasonsChart" style="box-sizing: border-box; display: block; height: 0px; width: 0px;" width="0" height="0"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Results Page -->
+            <div id="overall" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> ترتيب المشاركين حسب إجمالي الأفكار</h2>
+                    <div class="chart-container">
+                        <canvas id="overall_ideasChart" style="box-sizing: border-box; display: block; height: 400px; width: 930.4px;" width="1163" height="500"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-fire"></i> ترتيب المشاركين حسب الأيام المتتالية</h2>
+                    <div class="chart-container">
+                        <canvas id="overall_streakChart" style="box-sizing: border-box; display: block; height: 400px; width: 930.4px;" width="1163" height="500"></canvas>
                     </div>
                 </div>
             </div>
@@ -698,8 +719,62 @@
             setInterval(loadData, 5 * 60 * 1000); // Update every 5 minutes
         });
 
-        function getSeasonFromDate(date) {
-            return getCurrentSeason();
+        function getHijriDate(gregorianDate = new Date()) {
+            // Intl for Hijri (Umm al-Qura calendar)
+            const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+                day: "numeric",
+                month: "numeric",
+                year: "numeric"
+            });
+
+            const parts = hijriFormatter.formatToParts(gregorianDate);
+            const hijriParts = {};
+            for (const p of parts) {
+                if (p.type !== "literal") {
+                hijriParts[p.type] = parseInt(p.value, 10);
+                }
+            }
+
+            // Arabic Hijri month names
+            const hijriMonthsAr = [
+                "محرم",
+                "صفر",
+                "ربيع الأول",
+                "ربيع الآخر",
+                "جمادى الأولى",
+                "جمادى الآخرة",
+                "رجب",
+                "شعبان",
+                "رمضان",
+                "شوال",
+                "ذو القعدة",
+                "ذو الحجة"
+            ];
+
+            return {
+                year: hijriParts.year,
+                month: hijriParts.month,
+                month_name: hijriMonthsAr[hijriParts.month - 1],
+                day: hijriParts.day
+            };
+        }
+
+        function getSeasonID(season_name) {
+
+        }
+
+        function getSeasonStartDate(season_name) {
+            let hij_date = getCurrentHijriDate();
+            let past_month = hij_date.previousMonth();
+            if (getLastDayOfMonth(past_month) == friday)
+                return firstDayOfHijriMonth(hij_date);
+            return getFirstSaturdayOfHijriMonth(current_hijri_month);
+        }
+
+        function getSeasonFromDate(date = new Date()) {
+            let hijri = getHijriDate(date)
+
+            // return `${getHijriDate()} ${getHijriDate()}`;
         }
 
         // Load data from Google Sheets
@@ -713,7 +788,7 @@
                 updateCountdown();
                 updateExpelled();
                 updateRecords();
-                updateOverallStats();
+                updateseasonsComparisonStats();
             } catch (error) {
                 console.error('Error loading data:', error);
             }
@@ -863,6 +938,7 @@
                     }]
                 },
                 options: {
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
@@ -919,6 +995,7 @@
                     }]
                 },
                 options: {
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
@@ -1121,14 +1198,14 @@
             `;
         }
 
-        // Update overall statistics
-        function updateOverallStats() {
+        // Update seasonsComparison statistics
+        function updateseasonsComparisonStats() {
             const seasons = [...new Set(allData.map(d => d.season))];
             const participants = [...new Set(allData.map(d => d.name))];
             const totalIdeas = allData.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
             const avgIdeas = totalIdeas / participants.length;
             
-            const statsContainer = document.getElementById('overallStats');
+            const statsContainer = document.getElementById('seasonsComparisonStats');
             statsContainer.innerHTML = `
                 <div class="stat-card">
                     <h3>${participants.length}</h3>
@@ -1197,6 +1274,7 @@
                     ]
                 },
                 options: {
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: {
