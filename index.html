@@ -667,28 +667,46 @@
         </div>
     </main>
 
+    <script src="names.js"></script>
     <script>
         // Global variables
         let allData = [];
         let currentSeason = null;
         let charts = {};
         
-        // Google Sheets CSV URL - Replace with your actual URL
-        const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1_R9eYLil1B0krbta74AeYJNiOggp4aWRjO0Yr7_lc7Y/edit?gid=773724470#gid=773724470/export?format=csv';
+        const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbzfX1H2ySK5WXDd5PUOe_-Rc3Cuknpm7HVuFTdUdE3hBmXfoRmtoj-_XWbeaUM0LpY7Mg';
+        const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
         
+        async function loadRawResponses() {
+            try {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                const result = await response.json();
+                if (!result.success) {
+                    console.error('Error:', result);
+                    alert("Error in loading data");
+                }
+                return result.data;
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error in loading data");
+            }
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             setInterval(loadData, 5 * 60 * 1000); // Update every 5 minutes
         });
 
+        function getSeasonFromDate(date) {
+            return getCurrentSeason();
+        }
+
         // Load data from Google Sheets
         async function loadData() {
             try {
-                // For demo purposes, using sample data
-                // In production, replace with actual fetch from SHEETS_URL
-                const sampleData = generateSampleData();
-                allData = sampleData;
+                allData = await loadRawResponses();
+                console.log(`Loaded ${allData.length} rows`);
                 currentSeason = getCurrentSeason();
                 
                 updateCurrentResults();
@@ -699,43 +717,6 @@
             } catch (error) {
                 console.error('Error loading data:', error);
             }
-        }
-
-        // Generate sample data for demo
-        function generateSampleData() {
-            const participants = [
-                'أحمد محمد', 'فاطمة علي', 'محمد حسن', 'عائشة أحمد', 'خالد الصالح',
-                'نورا الزهراني', 'عبدالله الحربي', 'مريم الشمري', 'سعد العتيبي', 'هدى القحطاني'
-            ];
-            
-            const data = [];
-            const today = new Date();
-            
-            for (let i = 0; i < 30; i++) {
-                const date = new Date(today - (i * 24 * 60 * 60 * 1000));
-                participants.forEach((name, index) => {
-                    if (Math.random() > 0.3) { // 70% chance of reading
-                        const minutes = Math.floor(Math.random() * 120) + 10;
-                        const ideas = calculateIdeas(minutes);
-                        const additionalIdeas = Math.random() > 0.8 ? 60 : 0; // Occasional bonus
-                        
-                        data.push({
-                            timestamp: date.toISOString(),
-                            date: formatDate(date),
-                            season: 'محرم 1446',
-                            email: `${name.replace(' ', '.')}@example.com`,
-                            name: name,
-                            timeCompleted: formatTime(minutes),
-                            minutePoints: minutes,
-                            additionalIdeas: additionalIdeas,
-                            additionalPoints: additionalIdeas,
-                            totalIdeas: ideas + additionalIdeas
-                        });
-                    }
-                });
-            }
-            
-            return data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         }
 
         // Calculate ideas based on reading time with multipliers
@@ -753,6 +734,11 @@
             return Math.round(ideas * 100) / 100;
         }
 
+        function durationToMinutes(duration) {
+            let arr = duration.split(':');
+            return parseInt(arr[0])*60 + parseInt(arr[1]) + parseInt(arr[2])/60;
+        }
+
         // Format time from minutes to H:M:S
         function formatTime(minutes) {
             const hours = Math.floor(minutes / 60);
@@ -766,6 +752,7 @@
         }
 
         // Get current season
+        // TODO: Fix
         function getCurrentSeason() {
             return 'محرم 1446';
         }
@@ -789,7 +776,7 @@
 
         // Update current results
         function updateCurrentResults() {
-            const seasonData = allData.filter(d => d.season === currentSeason);
+            const seasonData = allData.filter(d => getSeasonFromDate(d.timestamp) === currentSeason);
             const participants = getParticipantsStats(seasonData);
             
             // Ideas Chart
@@ -804,9 +791,9 @@
             const stats = {};
             
             data.forEach(entry => {
-                if (!stats[entry.name]) {
-                    stats[entry.name] = {
-                        name: entry.name,
+                if (!stats[entry.email]) {
+                    stats[entry.email] = {
+                        name: emailToName(entry.email),
                         totalIdeas: 0,
                         totalMinutes: 0,
                         streak: 0,
@@ -815,20 +802,20 @@
                     };
                 }
                 
-                stats[entry.name].totalIdeas += entry.totalIdeas || 0;
-                stats[entry.name].totalMinutes += entry.minutePoints || 0;
-                stats[entry.name].readingDays.add(entry.date);
+                stats[entry.email].totalIdeas += calculateIdeas(durationToMinutes(entry.hours)) || 0;
+                stats[entry.email].totalMinutes += durationToMinutes(entry.hours) || 0;
+                stats[entry.email].readingDays.add(entry.timestamp);
                 
-                if (!stats[entry.name].lastReadingDate || new Date(entry.date) > new Date(stats[entry.name].lastReadingDate)) {
-                    stats[entry.name].lastReadingDate = entry.date;
+                if (!stats[entry.email].lastReadingDate || new Date(entry.timestamp) > new Date(stats[entry.email].lastReadingDate)) {
+                    stats[entry.email].lastReadingDate = entry.timestamp;
                 }
             });
             
             // Calculate streaks
-            Object.keys(stats).forEach(name => {
-                stats[name].streak = calculateStreak(stats[name].readingDays);
+            Object.keys(stats).forEach(email => {
+                stats[email].streak = calculateStreak(stats[email].readingDays);
             });
-            
+            console.log(Object.values(stats));
             return Object.values(stats);
         }
 
@@ -1061,6 +1048,7 @@
         }
 
         // Get current week of the season
+        // TODO: Fix
         function getCurrentWeek() {
             // Simplified calculation - in real implementation, calculate based on season start date
             return 2;
