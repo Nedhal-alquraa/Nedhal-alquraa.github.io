@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عارض بيانات النموذج</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            color: #e3f2fd;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .summary-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1976D2;
+            margin-bottom: 5px;
+        }
+        
+        .summary-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .data-table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: right;
+            font-weight: bold;
+            border-bottom: 2px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #c62828;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+        
+        .time-cell {
+            font-weight: bold;
+            color: #1976D2;
+        }
+        
+        .email-cell {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .highlight {
+            background-color: #fff3cd !important;
+        }
+        
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .filter-input {
+                width: 100%;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 عارض بيانات النموذج</h1>
+            <div class="subtitle">استعراض وتحليل استجابات Google Forms</div>
+        </header>
+        
+        <!-- أزرار التحكم -->
+        <div class="controls">
+            <button onclick="loadData()" id="loadBtn">
+                <span class="loader" style="display: none;"></span>
+                <span>🔄 جلب البيانات</span>
+            </button>
+            <input type="text" 
+                   class="filter-input" 
+                   id="filterInput" 
+                   placeholder="🔍 ابحث في البيانات..."
+                   onkeyup="filterTable()">
+            <button onclick="exportToCSV()">
+                📥 تصدير CSV
+            </button>
+            <button onclick="printData()">
+                🖨️ طباعة
+            </button>
+        </div>
+        
+        <!-- رسائل الحالة -->
+        <div id="statusMessage"></div>
+        
+        <!-- بطاقات الإحصائيات -->
+        <div class="summary-cards" id="summaryCards" style="display: none;">
+            <div class="summary-card">
+                <div class="summary-value" id="totalResponses">0</div>
+                <div class="summary-label">📝 إجمالي الاستجابات</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="uniqueParticipants">0</div>
+                <div class="summary-label">👥 المشاركون</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="totalHours">0:00</div>
+                <div class="summary-label">⏱️ إجمالي الساعات</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="averageTime">0</div>
+                <div class="summary-label">📊 متوسط الدقائق</div>
+            </div>
+        </div>
+        
+        <!-- جدول البيانات -->
+        <div class="data-table-container" id="tableContainer" style="display: none;">
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        
+        <!-- رسالة التحميل -->
+        <div class="loading" id="loadingMessage" style="display: none;">
+            <div class="loader" style="width: 40px; height: 40px; margin: 0 auto 20px;"></div>
+            <div>جاري تحميل البيانات...</div>
+        </div>
+    </div>
+    
+    <script>
+        // ضع رابط Google Apps Script هنا بعد النشر
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxu9d1t50_hTViLlIE1a5GIZVgfZER56fEhRS1-TR5HBoKJpwqYDWQvDQKLZtre4W_8yg/exec';
+        
+        let currentData = [];
+        let allData = [];
+        
+        // جلب البيانات
+        async function loadData() {
+            const loadBtn = document.getElementById('loadBtn');
+            const loader = loadBtn.querySelector('.loader');
+            const btnText = loadBtn.querySelector('span:last-child');
+            
+            // إظهار حالة التحميل
+            loader.style.display = 'inline-block';
+            btnText.textContent = 'جاري التحميل...';
+            loadBtn.disabled = true;
+            
+            showMessage('جاري جلب البيانات من Google Sheets...', 'loading');
+            
+            try {
+                const response = await fetch(API_URL);
+                const result = await response.json();
+                
+                if (result.success) {
+                    allData = result.data;
+                    currentData = result.data;
+                    
+                    // عرض الإحصائيات
+                    displaySummary(result.summary);
+                    
+                    // عرض البيانات
+                    displayData(result.data, result.headers);
+                    
+                    showMessage(`تم جلب ${result.data.length} سجل بنجاح`, 'success');
+                    
+                    // إظهار العناصر المخفية
+                    document.getElementById('summaryCards').style.display = 'grid';
+                    document.getElementById('tableContainer').style.display = 'block';
+                } else {
+                    showMessage(result.message || 'حدث خطأ في جلب البيانات', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('خطأ في الاتصال بالخادم: ' + error.message, 'error');
+            } finally {
+                // إخفاء حالة التحميل
+                loader.style.display = 'none';
+                btnText.textContent = '🔄 جلب البيانات';
+                loadBtn.disabled = false;
+            }
+        }
+        
+        // عرض الإحصائيات
+        function displaySummary(summary) {
+            document.getElementById('totalResponses').textContent = summary.totalResponses;
+            document.getElementById('uniqueParticipants').textContent = summary.uniqueParticipants;
+            document.getElementById('totalHours').textContent = summary.formattedTime;
+            document.getElementById('averageTime').textContent = summary.averageMinutesPerResponse + ' د';
+        }
+        
+        // عرض البيانات في الجدول
+        function displayData(data, headers) {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            // إنشاء رؤوس الجدول
+            let headerHTML = '<tr>';
+            headerHTML += '<th>#</th>'; // عمود الترقيم
+            headers.forEach(header => {
+                headerHTML += `<th>${header}</th>`;
+            });
+            headerHTML += '</tr>';
+            tableHead.innerHTML = headerHTML;
+            
+            // إنشاء صفوف البيانات
+            let bodyHTML = '';
+            data.forEach((row, index) => {
+                bodyHTML += '<tr>';
+                bodyHTML += `<td>${index + 1}</td>`; // رقم الصف
+                
+                headers.forEach(header => {
+                    let value = row[header] || '';
+                    let cellClass = '';
+                    
+                    // تنسيق خاص لبعض الأعمدة
+                    if (header === 'عدد الساعات المنجزة') {
+                        cellClass = 'time-cell';
+                    } else if (header === 'Email address') {
+                        cellClass = 'email-cell';
+                    }
+                    
+                    bodyHTML += `<td class="${cellClass}">${value}</td>`;
+                });
+                bodyHTML += '</tr>';
+            });
+            
+            tableBody.innerHTML = bodyHTML || '<tr><td colspan="100%" class="no-data">لا توجد بيانات</td></tr>';
+        }
+        
+        // فلترة الجدول
+        function filterTable() {
+            const filterValue = document.getElementById('filterInput').value.toLowerCase();
+            const rows = document.getElementById('tableBody').getElementsByTagName('tr');
+            
+            let visibleCount = 0;
+            
+            for (let row of rows) {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(filterValue)) {
+                    row.style.display = '';
+                    row.classList.toggle('highlight', filterValue.length > 0);
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('highlight');
+                }
+            }
+            
+            if (filterValue) {
+                showMessage(`عرض ${visibleCount} نتيجة من ${rows.length}`, 'success');
+            }
+        }
+        
+        // تصدير إلى CSV
+        function exportToCSV() {
+            if (allData.length === 0) {
+                showMessage('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            
+            // إنشاء محتوى CSV
+            let csv = '\ufeff'; // UTF-8 BOM for Arabic
+            
+            // العناوين
+            const headers = Object.keys(allData[0]).filter(h => h !== 'rowNumber' && h !== 'totalMinutes');
+            csv += headers.join(',') + '\n';
+            
+            // البيانات
+            allData.forEach(row => {
+                const values = headers.map(header => {
+                    let value = row[header] || '';
+                    // إضافة علامات اقتباس للقيم التي تحتوي على فواصل
+                    if (value.toString().includes(',')) {
+                        value = `"${value}"`;
+                    }
+                    return value;
+                });
+                csv += values.join(',') + '\n';
+            });
+            
+            // تحميل الملف
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `form_data_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage('تم تصدير البيانات بنجاح', 'success');
+        }
+        
+        // طباعة البيانات
+        function printData() {
+            if (allData.length === 0) {
+                showMessage('لا توجد بيانات للطباعة', 'error');
+                return;
+            }
+            
+            window.print();
+        }
+        
+        // عرض رسالة الحالة
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('statusMessage');
+            
+            if (type === 'loading') {
+                messageDiv.className = '';
+                messageDiv.innerHTML = `
+                    <div class="loading" style="background: white; border-radius: 6px; padding: 15px; color: #333;">
+                        <span class="loader" style="vertical-align: middle; margin-left: 10px;"></span>
+                        ${message}
+                    </div>
+                `;
+            } else {
+                messageDiv.className = type;
+                messageDiv.textContent = message;
+                
+                // إخفاء الرسالة بعد 5 ثواني
+                setTimeout(() => {
+                    messageDiv.className = '';
+                    messageDiv.textContent = '';
+                }, 5000);
+            }
+        }
+        
+        // تحميل البيانات عند فتح الصفحة
+        window.addEventListener('load', () => {
+            // يمكنك تفعيل هذا السطر لتحميل البيانات تلقائياً
+            // loadData();
+        });
+        
+        // اختصار لوحة المفاتيح
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'r' || e.key === 'R') {
+                    e.preventDefault();
+                    loadData();
+                } else if (e.key === 'f' || e.key === 'F') {
+                    e.preventDefault();
+                    document.getElementById('filterInput').focus();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
