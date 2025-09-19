@@ -3,7 +3,7 @@ let allData = [];
 let currentSeason = null;
 let charts = {};
 
-const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbzfX1H2ySK5WXDd5PUOe_-Rc3Cuknpm7HVuFTdUdE3hBmXfoRmtoj-_XWbeaUM0LpY7Mg';
+const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbwiQdFE8MQOz1o4jeqxEdmOEpr0PGf-QkaOqMQmZ2PDsVoisHJG5gwFOhN1RKTo9NAmcg';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
 
 async function loadRawResponses() {
@@ -76,7 +76,7 @@ function updateCurrentResults() {
 // Update Ideas Chart
 function updateIdeasChart(participants) {
     const ctx = document.getElementById('ideasChart').getContext('2d');
-    const sortedParticipants = participants.sort((a, b) => b.totalIdeas - a.totalIdeas).slice(0, 10);
+    const sortedParticipants = participants.sort((a, b) => b.totalIdeas - a.totalIdeas);
     
     if (charts.ideas) {
         charts.ideas.destroy();
@@ -113,6 +113,8 @@ function updateIdeasChart(participants) {
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        display: true,
+                        autoSkip: false,
                         font: {
                             family: 'Cairo'
                         }

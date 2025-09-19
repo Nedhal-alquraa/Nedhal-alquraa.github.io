@@ -233,9 +233,10 @@ const OLD_SEASONS_START_DATE = [
     "2025/05/03",
     "2025/05/31",
     "2025/06/29",
-    "2025/07/27"
+    "2025/07/27",
+    "2025/08/24",
 ];
-const OLD_SEASONS_END = "2025/08/23";
+const OLD_SEASONS_END = "2025/09/27";
 function getSeasonID(season_name) {
     let hij_year = parseInt(season_name.split(' ')[1]);
     let hij_month = parseInt(HIJRI_MONTHS[season_name.split(' ')[0]]);
@@ -254,15 +255,16 @@ function getSeasonStartDate(season_name) {
 
 function getSeasonFromDate(date = new Date()) {
     if (date < new Date(OLD_SEASONS_END)) {
-        let greDate = undefined;
-        for (let i = 0; i < OLD_SEASONS_START_DATE.length; i++) {
+        let seasonId = OLD_SEASONS_START_DATE.length-1;
+        for (let i = 1; i < OLD_SEASONS_START_DATE.length; i++) {
             if (date < new Date(OLD_SEASONS_START_DATE[i])) {
-                greDate = new Date(OLD_SEASONS_START_DATE[i-1]);
+                seasonId = i - 1;
+                break;
             }
-            greDate = new Date(OLD_SEASONS_START_DATE[OLD_SEASONS_START_DATE.length-1]);
         }
-        let hijri = dateToHijri(greDate);
-        return `${HIJRI_TO_MONTHS[hijri.month]} ${hijri.year}`;
+        let year = 1446 + Math.floor(seasonId / 12);
+        let month = seasonId%12 + 1;
+        return `${HIJRI_TO_MONTHS[month]} ${year}`;
     }
     let hijri = dateToHijri(date);
     let first_sat = getFirstSaturdayOfHijriMonth(hijri.year, hijri.month);
@@ -300,11 +302,11 @@ function calculateIdeas(minutes) {
     if (minutes <= 15) {
         ideas = minutes;
     } else if (minutes <= 30) {
-        ideas = 15 + ((minutes - 15) * 1.15);
+        ideas = minutes * 1.15;
     } else {
-        ideas = 15 + (15 * 1.15) + ((minutes - 30) * 1.2);
+        ideas = minutes * 1.2;
     }
-    
+    // Make it only 2 decimal places
     return Math.round(ideas * 100) / 100;
 }
 
@@ -335,13 +337,23 @@ function getParticipantsStats(data) {
                 totalIdeas: 0,
                 totalMinutes: 0,
                 streak: 0,
+                currentStreak: 0,
                 lastReadingDate: null,
                 readingDays: new Set()
             };
         }
-        
-        stats[entry.email].totalIdeas += calculateIdeas(durationToMinutes(entry.hours)) || 0;
-        stats[entry.email].totalMinutes += durationToMinutes(entry.hours) || 0;
+
+        let factor = 1;
+        if (stats[entry.email].lastReadingDate < new Date(entry.timestamp))
+            stats[entry.email].currentStreak++;
+        else
+            stats[entry.email].currentStreak = 0;
+
+        if (stats[entry.email].currentStreak >= 2) factor = 1.15;
+        if (stats[entry.email].currentStreak >= 3) factor = 1.2;
+
+        stats[entry.email].totalIdeas += calculateIdeas(durationToMinutes(entry.hours));
+        stats[entry.email].totalMinutes += durationToMinutes(entry.hours);
         stats[entry.email].readingDays.add(entry.timestamp);
         
         if (!stats[entry.email].lastReadingDate || new Date(entry.timestamp) > new Date(stats[entry.email].lastReadingDate)) {
@@ -354,7 +366,11 @@ function getParticipantsStats(data) {
         stats[email].streak = calculateStreak(stats[email].readingDays);
     });
     console.log(Object.values(stats));
-    return Object.values(stats);
+
+    const filteredPeople = Object.fromEntries(
+        Object.entries(stats).filter(([key, person]) => person.totalIdeas !== 0)
+    );
+    return Object.values(filteredPeople);
 }
 
 // Get status text
