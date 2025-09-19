@@ -12,12 +12,12 @@ async function loadRawResponses() {
         const result = await response.json();
         if (!result.success) {
             console.error('Error:', result);
-            alert("Error in loading data");
+            alert("Error in loading data from Google, refresh the website again");
         }
         return result.data;
     } catch (error) {
         console.error('Error:', error);
-        alert("Error in loading data");
+        alert("Error in loading data from Google, refresh the website again");
     }
 }
 
