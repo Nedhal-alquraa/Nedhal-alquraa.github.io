@@ -4,7 +4,7 @@ function hijriToGregorian(hYear, hMonth, hDay) {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-        timeZone: 'UTC'
+        timeZone: 'Asia/Riyadh'
     });
 
     const getHijriParts = (date) => {
@@ -43,6 +43,24 @@ function hijriToGregorian(hYear, hMonth, hDay) {
     throw new Error(`Hijri date ${hYear}-${hMonth}-${hDay} not found`);
 }
 
+function dateToHijri(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+        calendar: 'islamic-umalqura',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Asia/Riyadh'
+    });
+  
+  const parts = formatter.formatToParts(date);
+  
+  return {
+    year: parseInt(parts.find(part => part.type === 'year').value),
+    month: parseInt(parts.find(part => part.type === 'month').value),
+    day: parseInt(parts.find(part => part.type === 'day').value)
+  };
+}
+
 function getFirstSaturdayOfHijriMonth(hijriYear, hijriMonth) {
     // Validate input parameters
     if (!Number.isInteger(hijriYear) || hijriYear < 1) {
@@ -60,7 +78,7 @@ function getFirstSaturdayOfHijriMonth(hijriYear, hijriMonth) {
         month: '2-digit',
         day: '2-digit',
         weekday: 'long',
-        timeZone: 'UTC'
+        timeZone: 'Asia/Riyadh'
     });
 
     // Find the first day of the target Hijri month
@@ -115,109 +133,6 @@ const HIJRI_MONTHS = {
     "ذو القعدة": 11,
     "ذو الحجة": 12
 };
-
-function dateToHijri(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-        calendar: 'islamic-umalqura',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'UTC'
-    });
-  
-  const parts = formatter.formatToParts(date);
-  
-  return {
-    year: parseInt(parts.find(part => part.type === 'year').value),
-    month: parseInt(parts.find(part => part.type === 'month').value),
-    day: parseInt(parts.find(part => part.type === 'day').value)
-  };
-}
-// Gregorian -> Hijri (Umm al-Qura-backed on Aladhan; adjustable)
-async function gToH(gy, gm, gd, { adjustment = 0 } = {}) {
-  const dd = String(gd).padStart(2, "0");
-  const mm = String(gm).padStart(2, "0");
-  const yyyy = String(gy);
-
-  const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}?adjustment=${adjustment}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.code !== 200 || !json.data?.hijri) throw new Error("Unexpected response");
-
-  const h = json.data.hijri;
-  return {
-    hDay: Number(h.day),
-    hMonth: h.month.number,
-    hMonthNameAr: h.month.ar,
-    hMonthNameEn: h.month.en,
-    hYear: Number(h.year),
-    weekdayAr: h.weekday.ar,
-    weekdayEn: h.weekday.en,
-    isoHijri: `${h.year}-${String(h.month.number).padStart(2, "0")}-${String(h.day).padStart(2, "0")}`,
-    source: "aladhan"
-  };
-}
-
-// Hijri -> Gregorian
-async function hToG(hy, hm, hd, { adjustment = 0 } = {}) {
-  const dd = String(hd).padStart(2, "0");
-  const mm = String(hm).padStart(2, "0");
-  const yyyy = String(hy);
-
-  const url = `https://api.aladhan.com/v1/hToG/${dd}-${mm}-${yyyy}?adjustment=${adjustment}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.code !== 200 || !json.data?.gregorian) throw new Error("Unexpected response");
-
-  const g = json.data.gregorian;
-  return {
-    gDay: Number(g.day),
-    gMonth: g.month.number,
-    gMonthNameEn: g.month.en,
-    gYear: Number(g.year),
-    weekdayEn: g.weekday.en,
-    isoGregorian: `${g.year}-${String(g.month.number).padStart(2, "0")}-${String(g.day).padStart(2, "0")}`,
-    source: "aladhan"
-  };
-}
-
-
-function getHijriDateDetails(gregorianDate = new Date()) {
-    // Ensure the input is a valid Date object
-    if (!(gregorianDate instanceof Date) || isNaN(gregorianDate)) {
-        throw new Error("Invalid Date object provided");
-    }
-
-    try {
-        // Attempt to format the date in the Islamic (Hijri) calendar
-        const formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            timeZone: 'UTC'
-        });
-
-        // Get formatted parts of the Hijri date
-        const parts = formatter.formatToParts(gregorianDate);
-        const year = parseInt(parts.find(part => part.type === 'year').value);
-        const month = parseInt(parts.find(part => part.type === 'month').value);
-        const day = parseInt(parts.find(part => part.type === 'day').value);
-
-
-        // Return dictionary with required details
-        return {
-            year: year,
-            month: month,
-            day: day
-        };
-    } catch (error) {
-        // Fallback if the Islamic calendar is not supported
-        console.warn("Hijri calendar not supported in this environment's Intl.DateTimeFormat");
-        throw new Error("Hijri calendar is not supported in this environment. Please use a library like hijri-date for accurate conversions.");
-    }
-}
 
 const FIRST_YEAR = 1446;
 const OLD_SEASONS_START_DATE = [
@@ -334,6 +249,15 @@ function formatDate(date) {
     return date.toISOString().split('T')[0];
 }
 
+const EXTRA_IDEAS = {
+    'مراجعة كتاب': 40,
+    'مشاركة فائدة': 5,
+    'جلسة كتاب': 40,
+    'اللقاء الافتتاحي': 50,
+    'قراءة الدستور': 20,
+    'الجلسة النقاشية': 60
+};
+
 function getParticipantsStats(data) {
     if (!data || data.length === 0) return [];
     
@@ -369,6 +293,8 @@ function getParticipantsStats(data) {
         const stat = stats[email];
         const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
         const entryDateObj = new Date(entryDate);
+        const prevDate = new Date(entryDateObj);
+        prevDate.setDate(prevDate.getDate() - 1);
         const minutes = durationToMinutes(entry.hours);
         
         // Track daily minutes (accumulate if multiple entries per day)
@@ -377,20 +303,18 @@ function getParticipantsStats(data) {
         stat.dailyMinutes[entryDate] += minutes;
         
         // Calculate streak factor
-        let factor = 1;
-        if (stat.lastReadingDate && entryDateObj > new Date(stat.lastReadingDate)) {
+        if (prevDate == stat.lastReadingDate) {
             stat.currentStreak++;
-        } else if (!stat.lastReadingDate) {
+        } else if (entryDateObj != stat.lastReadingDate) {
             stat.currentStreak = 1;
-        } else {
-            stat.currentStreak = 0;
         }
         
+        let factor = 1;
         if (stat.currentStreak >= 3) factor = 1.2;
         else if (stat.currentStreak >= 2) factor = 1.15;
         
         // Update totals
-        stat.totalIdeas += calculateIdeas(minutes) * factor;
+        stat.totalIdeas += calculateIdeas(minutes) + (EXTRA_IDEAS[entry.extra] || 0);
         stat.totalMinutes += minutes;
         stat.readingDays.add(entryDate);
         

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadData() {
     try {
         allData = await loadRawResponses();
+        // allData.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
         
@@ -203,8 +204,8 @@ function updateCountdown() {
             daysRemaining: Math.min(21, daysRemaining),
             status: daysRemaining > 5 ? 'safe' : daysRemaining > 3 ? 'warning' : 'danger'
         };
-    }).sort((a, b) => a.totalIdeas - b.totalIdeas);
-    // console.log("Countdown: ", countdownData);
+    }).sort((a, b) => a.totalIdeas - b.totalIdeas).filter(p => p.totalIdeas > 0);
+    
     tbody.innerHTML = '';
     countdownData.forEach((participant, index) => {
         const row = tbody.insertRow();
