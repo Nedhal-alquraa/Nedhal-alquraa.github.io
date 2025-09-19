@@ -65,7 +65,7 @@ function showPage(pageId) {
 function updateCurrentResults() {
     const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
-    console.log(participants);
+    
     // Ideas Chart
     updateIdeasChart(participants);
     
@@ -191,20 +191,20 @@ function updateStreakChart(participants) {
 
 // Update countdown table
 function updateCountdown() {
-    const seasonData = allData.filter(d => d.season === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const tbody = document.getElementById('countdownBody');
-    
+    // console.log(participants);
     // Calculate days remaining for each participant
     const countdownData = participants.map(p => {
         const daysRemaining = Math.floor(p.totalIdeas / 10);
         return {
             ...p,
-            daysRemaining: Math.max(0, daysRemaining),
-            status: daysRemaining > 7 ? 'safe' : daysRemaining > 3 ? 'warning' : 'danger'
+            daysRemaining: Math.min(21, daysRemaining),
+            status: daysRemaining > 5 ? 'safe' : daysRemaining > 3 ? 'warning' : 'danger'
         };
-    }).sort((a, b) => a.daysRemaining - b.daysRemaining);
-    
+    }).sort((a, b) => a.totalIdeas - b.totalIdeas);
+    // console.log("Countdown: ", countdownData);
     tbody.innerHTML = '';
     countdownData.forEach((participant, index) => {
         const row = tbody.insertRow();
@@ -225,13 +225,13 @@ function updateCountdown() {
 
 // Update expelled participants
 function updateExpelled() {
-    const seasonData = allData.filter(d => d.season === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const content = document.getElementById('expelledContent');
     
     // Find participants eligible for expulsion
     const expelled = participants.filter(p => 
-        p.totalIdeas <= 0 || (getCurrentWeek() >= 3 && p.totalIdeas < 100)
+        (p.totalIdeas <= 0) || (getCurrentWeek() >= 3 && p.totalIdeas < 100)
     ).map(p => ({
         ...p,
         reason: p.totalIdeas <= 0 ? 'وصول الأفكار للصفر' : 'عدم تحقيق 100 فكرة بنهاية الأسبوع الثالث',

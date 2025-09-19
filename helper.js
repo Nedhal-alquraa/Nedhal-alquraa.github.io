@@ -22,8 +22,8 @@ function hijriToGregorian(hYear, hMonth, hDay) {
         return parts.day - targetDay;
     };
 
-    let low = new Date('2020-01-01T00:00:00.000Z');
-    let high = new Date('2040-01-01T00:00:00.000Z');
+    let low = new Date('2023-01-01T00:00:00.000Z');
+    let high = new Date('2030-01-01T00:00:00.000Z');
     
     while (low <= high) {
         const mid = new Date(low.getTime() + Math.floor((high.getTime() - low.getTime()) / 2));
@@ -31,6 +31,7 @@ function hijriToGregorian(hYear, hMonth, hDay) {
         const comparison = compareHijriDates(parts, hYear, hMonth, hDay);
         
         if (comparison === 0) {
+            mid.setHours(0, 0, 0, 0);
             return mid;
         } else if (comparison < 0) {
             low = new Date(mid.getTime() + 1);
@@ -238,17 +239,23 @@ const OLD_SEASONS_START_DATE = [
 ];
 const OLD_SEASONS_END = "2025/09/27";
 function getSeasonID(season_name) {
-    let hij_year = parseInt(season_name.split(' ')[1]);
-    let hij_month = parseInt(HIJRI_MONTHS[season_name.split(' ')[0]]);
+    let spl = season_name.split(' ');
+    let hij_year = parseInt(spl[spl.length-1]);
+    let hij_month = parseInt(HIJRI_MONTHS[season_name.slice(0, season_name.length-5)]);
     return (hij_year-FIRST_YEAR)*12 + hij_month;
+}
+
+function nameBySeasonID(season_id) {
+    return `${HIJRI_TO_MONTHS[1+(season_id-1)%12]} ${1446+Math.floor(season_id/12)}`;
 }
 
 function getSeasonStartDate(season_name) {
     let season_id = getSeasonID(season_name);
     if (season_id <= OLD_SEASONS_START_DATE.length)
-        return OLD_SEASONS_START_DATE[season_id-1];
-    let hij_year = parseInt(season_name.split(' ')[1]);
-    let hij_month = parseInt(HIJRI_MONTHS[season_name.split(' ')[0]]);
+        return new Date(OLD_SEASONS_START_DATE[season_id-1]);
+    let spl = season_name.split(' ');
+    let hij_year = parseInt(spl[spl.length-1]);
+    let hij_month = parseInt(HIJRI_MONTHS[season_name.slice(0, season_name.length-5)]);
     let hij_day = getFirstSaturdayOfHijriMonth(hij_year, hij_month);
     return hijriToGregorian(hij_year, hij_month, hij_day);
 }
@@ -328,49 +335,109 @@ function formatDate(date) {
 }
 
 function getParticipantsStats(data) {
+    if (!data || data.length === 0) return [];
+    
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const seasonStart = getSeasonStartDate(currentSeason);
+    const seasonEnd = new Date(getSeasonStartDate(nameBySeasonID(getSeasonID(currentSeason)+1))-dayMs);
+    const protectedEndDate = new Date(seasonStart); // First 7 days
+    protectedEndDate.setDate(seasonStart.getDate() + 7);
+    
+    // Initialize stats map
     const stats = {};
     
-    data.forEach(entry => {
-        if (!stats[entry.email]) {
-            stats[entry.email] = {
-                name: emailToName(entry.email),
+    // Main processing loop
+    for (let i = 0; i < data.length; i++) {
+        const entry = data[i];
+        const email = emailToName(entry.email);
+        
+        if (!stats[email]) {
+            stats[email] = {
+                name: emailToName(email),
                 totalIdeas: 0,
                 totalMinutes: 0,
                 streak: 0,
                 currentStreak: 0,
                 lastReadingDate: null,
-                readingDays: new Set()
+                readingDays: new Set(),
+                dailyMinutes: {}, // Track minutes per day for subtraction calculation
+                subtraction: 0
             };
         }
-
-        let factor = 1;
-        if (stats[entry.email].lastReadingDate < new Date(entry.timestamp))
-            stats[entry.email].currentStreak++;
-        else
-            stats[entry.email].currentStreak = 0;
-
-        if (stats[entry.email].currentStreak >= 2) factor = 1.15;
-        if (stats[entry.email].currentStreak >= 3) factor = 1.2;
-
-        stats[entry.email].totalIdeas += calculateIdeas(durationToMinutes(entry.hours));
-        stats[entry.email].totalMinutes += durationToMinutes(entry.hours);
-        stats[entry.email].readingDays.add(entry.timestamp);
         
-        if (!stats[entry.email].lastReadingDate || new Date(entry.timestamp) > new Date(stats[entry.email].lastReadingDate)) {
-            stats[entry.email].lastReadingDate = entry.timestamp;
+        const stat = stats[email];
+        const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
+        const entryDateObj = new Date(entryDate);
+        const minutes = durationToMinutes(entry.hours);
+        
+        // Track daily minutes (accumulate if multiple entries per day)
+        if (!stat.dailyMinutes[entryDate])
+            stat.dailyMinutes[entryDate] = 0;
+        stat.dailyMinutes[entryDate] += minutes;
+        
+        // Calculate streak factor
+        let factor = 1;
+        if (stat.lastReadingDate && entryDateObj > new Date(stat.lastReadingDate)) {
+            stat.currentStreak++;
+        } else if (!stat.lastReadingDate) {
+            stat.currentStreak = 1;
+        } else {
+            stat.currentStreak = 0;
         }
-    });
+        
+        if (stat.currentStreak >= 3) factor = 1.2;
+        else if (stat.currentStreak >= 2) factor = 1.15;
+        
+        // Update totals
+        stat.totalIdeas += calculateIdeas(minutes) * factor;
+        stat.totalMinutes += minutes;
+        stat.readingDays.add(entryDate);
+        
+        // Update last reading date
+        if (!stat.lastReadingDate || entryDateObj > new Date(stat.lastReadingDate)) {
+            stat.lastReadingDate = entryDate;
+        }
+    }
     
-    // Calculate streaks
-    Object.keys(stats).forEach(email => {
-        stats[email].streak = calculateStreak(stats[email].readingDays);
-    });
-    console.log(Object.values(stats));
+    // Calculate streaks and subtractions
+    
 
-    const filteredPeople = Object.fromEntries(
-        Object.entries(stats).filter(([key, person]) => person.totalIdeas !== 0)
-    );
-    return Object.values(filteredPeople);
+    Object.keys(stats).forEach(email => {
+        const stat = stats[email];
+        
+        // Calculate streak
+        stat.streak = calculateStreak(stat.readingDays);
+        
+        const dateToday = new Date();
+        dateToday.setDate(dateToday.getDate() + 1);
+        dateToday.setHours(0, 0, 0, 0);
+        // Iterate through all days from first to last reading day for this participant
+        for (let d = new Date(seasonStart); d <= dateToday; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            
+            
+            // Skip if within protected week
+            if (d <= protectedEndDate) continue;
+            
+            
+            // Check if user read less than 3 minutes on this day
+            const minutesRead = stat.dailyMinutes[dateStr] || 0;
+            if (minutesRead < 3) {
+                stat.subtraction += 10;
+            } 
+        }
+        
+        // Apply subtraction to total ideas
+        stat.totalIdeas = Math.max(0, stat.totalIdeas - stat.subtraction);
+        
+        // Clean up temporary data
+        // delete stat.dailyMinutes;
+    });
+    console.log(stats);
+    
+    // Filter out participants with 0 ideas
+    return Object.values(stats);
 }
 
 // Get status text
