@@ -1,65 +1,285 @@
-function getHijriDate(gregorianDate = new Date()) {
-    // Intl for Hijri (Umm al-Qura calendar)
-    const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
-        day: "numeric",
-        month: "numeric",
-        year: "numeric"
+function hijriToGregorian(hYear, hMonth, hDay) {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        calendar: 'islamic-umalqura',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'UTC'
     });
 
-    const parts = hijriFormatter.formatToParts(gregorianDate);
-    const hijriParts = {};
-    for (const p of parts) {
-        if (p.type !== "literal") {
-            hijriParts[p.type] = parseInt(p.value, 10);
+    const getHijriParts = (date) => {
+        const parts = formatter.formatToParts(date);
+        return {
+            year: parseInt(parts.find(p => p.type === 'year').value),
+            month: parseInt(parts.find(p => p.type === 'month').value),
+            day: parseInt(parts.find(p => p.type === 'day').value)
+        };
+    };
+
+    const compareHijriDates = (parts, targetYear, targetMonth, targetDay) => {
+        if (parts.year !== targetYear) return parts.year - targetYear;
+        if (parts.month !== targetMonth) return parts.month - targetMonth;
+        return parts.day - targetDay;
+    };
+
+    let low = new Date('2020-01-01T00:00:00.000Z');
+    let high = new Date('2040-01-01T00:00:00.000Z');
+    
+    while (low <= high) {
+        const mid = new Date(low.getTime() + Math.floor((high.getTime() - low.getTime()) / 2));
+        const parts = getHijriParts(mid);
+        const comparison = compareHijriDates(parts, hYear, hMonth, hDay);
+        
+        if (comparison === 0) {
+            return mid;
+        } else if (comparison < 0) {
+            low = new Date(mid.getTime() + 1);
+        } else {
+            high = new Date(mid.getTime() - 1);
         }
     }
-
-    // Arabic Hijri month names
-    const hijriMonthsAr = [
-        "محرم",
-        "صفر",
-        "ربيع الأول",
-        "ربيع الآخر",
-        "جمادى الأولى",
-        "جمادى الآخرة",
-        "رجب",
-        "شعبان",
-        "رمضان",
-        "شوال",
-        "ذو القعدة",
-        "ذو الحجة"
-    ];
-
-    return {
-        year: hijriParts.year,
-        month: hijriParts.month,
-        month_name: hijriMonthsAr[hijriParts.month - 1],
-        day: hijriParts.day
-    };
+    
+    throw new Error(`Hijri date ${hYear}-${hMonth}-${hDay} not found`);
 }
 
-function getSeasonID(season_name) {
+function getFirstSaturdayOfHijriMonth(hijriYear, hijriMonth) {
+    // Validate input parameters
+    if (!Number.isInteger(hijriYear) || hijriYear < 1) {
+        throw new Error('Hijri year must be a positive integer');
+    }
+    if (!Number.isInteger(hijriMonth) || hijriMonth < 1 || hijriMonth > 12) {
+        throw new Error('Hijri month must be an integer between 1 and 12');
+    }
 
+
+    // The key insight: we can use Intl.DateTimeFormat.formatToParts to get detailed information
+    const partsFormatter = new Intl.DateTimeFormat('en-CA', {
+        calendar: 'islamic-umalqura',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'long',
+        timeZone: 'UTC'
+    });
+
+    // Find the first day of the target Hijri month
+    const firstDayOfMonth = hijriToGregorian(hijriYear, hijriMonth, 1);
+    
+    // Get the day of the week for the first day (0 = Sunday, 6 = Saturday)
+    const dayOfWeek = firstDayOfMonth.getUTCDay();
+    
+    // Calculate how many days to add to get to the first Saturday
+    const daysToFirstSaturday = (6 - dayOfWeek) % 7;
+    
+    // Create the date of the first Saturday
+    const firstSaturday = new Date(firstDayOfMonth.getTime() + (daysToFirstSaturday * 24 * 60 * 60 * 1000));
+    
+    // Use Intl.DateTimeFormat to get the Hijri day number of this Saturday
+    const parts = partsFormatter.formatToParts(firstSaturday);
+    const dayPart = parts.find(p => p.type === 'day');
+    
+    if (!dayPart) {
+        throw new Error('Could not determine Hijri day for the first Saturday');
+    }
+    
+    return parseInt(dayPart.value);
+}
+
+const HIJRI_TO_MONTHS = {
+    1: "محرم",
+    2: "صفر",
+    3: "ربيع الأول",
+    4: "ربيع الآخر",
+    5: "جمادى الأولى",
+    6: "جمادى الآخرة",
+    7: "رجب",
+    8: "شعبان",
+    9: "رمضان",
+    10: "شوال",
+    11: "ذو القعدة",
+    12: "ذو الحجة"
+};
+
+const HIJRI_MONTHS = {
+    "محرم": 1,
+    "صفر": 2,
+    "ربيع الأول": 3,
+    "ربيع الآخر": 4,
+    "جمادى الأولى": 5,
+    "جمادى الآخرة": 6,
+    "رجب": 7,
+    "شعبان": 8,
+    "رمضان": 9,
+    "شوال": 10,
+    "ذو القعدة": 11,
+    "ذو الحجة": 12
+};
+
+function dateToHijri(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+        calendar: 'islamic-umalqura',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'UTC'
+    });
+  
+  const parts = formatter.formatToParts(date);
+  
+  return {
+    year: parseInt(parts.find(part => part.type === 'year').value),
+    month: parseInt(parts.find(part => part.type === 'month').value),
+    day: parseInt(parts.find(part => part.type === 'day').value)
+  };
+}
+// Gregorian -> Hijri (Umm al-Qura-backed on Aladhan; adjustable)
+async function gToH(gy, gm, gd, { adjustment = 0 } = {}) {
+  const dd = String(gd).padStart(2, "0");
+  const mm = String(gm).padStart(2, "0");
+  const yyyy = String(gy);
+
+  const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}?adjustment=${adjustment}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.code !== 200 || !json.data?.hijri) throw new Error("Unexpected response");
+
+  const h = json.data.hijri;
+  return {
+    hDay: Number(h.day),
+    hMonth: h.month.number,
+    hMonthNameAr: h.month.ar,
+    hMonthNameEn: h.month.en,
+    hYear: Number(h.year),
+    weekdayAr: h.weekday.ar,
+    weekdayEn: h.weekday.en,
+    isoHijri: `${h.year}-${String(h.month.number).padStart(2, "0")}-${String(h.day).padStart(2, "0")}`,
+    source: "aladhan"
+  };
+}
+
+// Hijri -> Gregorian
+async function hToG(hy, hm, hd, { adjustment = 0 } = {}) {
+  const dd = String(hd).padStart(2, "0");
+  const mm = String(hm).padStart(2, "0");
+  const yyyy = String(hy);
+
+  const url = `https://api.aladhan.com/v1/hToG/${dd}-${mm}-${yyyy}?adjustment=${adjustment}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.code !== 200 || !json.data?.gregorian) throw new Error("Unexpected response");
+
+  const g = json.data.gregorian;
+  return {
+    gDay: Number(g.day),
+    gMonth: g.month.number,
+    gMonthNameEn: g.month.en,
+    gYear: Number(g.year),
+    weekdayEn: g.weekday.en,
+    isoGregorian: `${g.year}-${String(g.month.number).padStart(2, "0")}-${String(g.day).padStart(2, "0")}`,
+    source: "aladhan"
+  };
+}
+
+
+function getHijriDateDetails(gregorianDate = new Date()) {
+    // Ensure the input is a valid Date object
+    if (!(gregorianDate instanceof Date) || isNaN(gregorianDate)) {
+        throw new Error("Invalid Date object provided");
+    }
+
+    try {
+        // Attempt to format the date in the Islamic (Hijri) calendar
+        const formatter = new Intl.DateTimeFormat('en-US-u-ca-islamic', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone: 'UTC'
+        });
+
+        // Get formatted parts of the Hijri date
+        const parts = formatter.formatToParts(gregorianDate);
+        const year = parseInt(parts.find(part => part.type === 'year').value);
+        const month = parseInt(parts.find(part => part.type === 'month').value);
+        const day = parseInt(parts.find(part => part.type === 'day').value);
+
+
+        // Return dictionary with required details
+        return {
+            year: year,
+            month: month,
+            day: day
+        };
+    } catch (error) {
+        // Fallback if the Islamic calendar is not supported
+        console.warn("Hijri calendar not supported in this environment's Intl.DateTimeFormat");
+        throw new Error("Hijri calendar is not supported in this environment. Please use a library like hijri-date for accurate conversions.");
+    }
+}
+
+const FIRST_YEAR = 1446;
+const OLD_SEASONS_START_DATE = [
+    "2024/07/20",
+    "2024/08/03",
+    "2024/08/31",
+    "2024/09/28",
+    "2024/10/26",
+    "2024/11/30",
+    "2025/01/04",
+    "2025/02/01",
+    "2025/03/01",
+    "2025/03/29",
+    "2025/05/03",
+    "2025/05/31",
+    "2025/06/29",
+    "2025/07/27"
+];
+const OLD_SEASONS_END = "2025/08/23";
+function getSeasonID(season_name) {
+    let hij_year = parseInt(season_name.split(' ')[1]);
+    let hij_month = parseInt(HIJRI_MONTHS[season_name.split(' ')[0]]);
+    return (hij_year-FIRST_YEAR)*12 + hij_month;
 }
 
 function getSeasonStartDate(season_name) {
-    let hij_date = getCurrentHijriDate();
-    let past_month = hij_date.previousMonth();
-    if (getLastDayOfMonth(past_month) == friday)
-        return firstDayOfHijriMonth(hij_date);
-    return getFirstSaturdayOfHijriMonth(current_hijri_month);
+    let season_id = getSeasonID(season_name);
+    if (season_id <= OLD_SEASONS_START_DATE.length)
+        return OLD_SEASONS_START_DATE[season_id-1];
+    let hij_year = parseInt(season_name.split(' ')[1]);
+    let hij_month = parseInt(HIJRI_MONTHS[season_name.split(' ')[0]]);
+    let hij_day = getFirstSaturdayOfHijriMonth(hij_year, hij_month);
+    return hijriToGregorian(hij_year, hij_month, hij_day);
 }
 
 function getSeasonFromDate(date = new Date()) {
-    let hijri = getHijriDate(date)
-
-    // return `${getHijriDate()} ${getHijriDate()}`;
+    if (date < new Date(OLD_SEASONS_END)) {
+        let greDate = undefined;
+        for (let i = 0; i < OLD_SEASONS_START_DATE.length; i++) {
+            if (date < new Date(OLD_SEASONS_START_DATE[i])) {
+                greDate = new Date(OLD_SEASONS_START_DATE[i-1]);
+            }
+            greDate = new Date(OLD_SEASONS_START_DATE[OLD_SEASONS_START_DATE.length-1]);
+        }
+        let hijri = dateToHijri(greDate);
+        return `${HIJRI_TO_MONTHS[hijri.month]} ${hijri.year}`;
+    }
+    let hijri = dateToHijri(date);
+    let first_sat = getFirstSaturdayOfHijriMonth(hijri.year, hijri.month);
+    
+    if (first_sat > hijri.day) {
+        // Return the previous 
+        if (hijri.month == 1) {
+            hijri.month = 12;
+            hijri.year -= 1;
+        } else hijri.month -= 1;
+    }
+    return `${HIJRI_TO_MONTHS[hijri.month]} ${hijri.year}`;
 }
 
 // Get current season
-// TODO: Fix
 function getCurrentSeason() {
-    return 'محرم 1446';
+    return getSeasonFromDate();
 }
 
 // Get current week of the season

@@ -63,7 +63,7 @@ function showPage(pageId) {
 
 // Update current results
 function updateCurrentResults() {
-    const seasonData = allData.filter(d => getSeasonFromDate(d.timestamp) === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     console.log(participants);
     // Ideas Chart
