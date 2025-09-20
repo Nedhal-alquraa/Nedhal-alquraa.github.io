@@ -85,7 +85,7 @@ function getFirstSaturdayOfHijriMonth(hijriYear, hijriMonth) {
     const firstDayOfMonth = hijriToGregorian(hijriYear, hijriMonth, 1);
     
     // Get the day of the week for the first day (0 = Sunday, 6 = Saturday)
-    const dayOfWeek = firstDayOfMonth.getUTCDay();
+    const dayOfWeek = (firstDayOfMonth.getUTCDay()+8)%7;
     
     // Calculate how many days to add to get to the first Saturday
     const daysToFirstSaturday = (6 - dayOfWeek) % 7;
@@ -150,9 +150,9 @@ const OLD_SEASONS_START_DATE = [
     "2025/05/31",
     "2025/06/29",
     "2025/07/27",
-    "2025/08/24",
+    // "2025/08/24",
 ];
-const OLD_SEASONS_END = "2025/09/27";
+const OLD_SEASONS_END = "2025/08/29";
 function getSeasonID(season_name) {
     let spl = season_name.split(' ');
     let hij_year = parseInt(spl[spl.length-1]);
@@ -270,7 +270,7 @@ function getParticipantsStats(data) {
     
     // Initialize stats map
     const stats = {};
-    
+    data = data.sort((a, b) => (new Date(a.timestamp)) - (new Date(b.timestamp)));
     // Main processing loop
     for (let i = 0; i < data.length; i++) {
         const entry = data[i];
@@ -284,17 +284,22 @@ function getParticipantsStats(data) {
                 streak: 0,
                 currentStreak: 0,
                 lastReadingDate: null,
+                lastReadingMinutes: 0,
+                extraIdeas: 0,
                 readingDays: new Set(),
                 dailyMinutes: {}, // Track minutes per day for subtraction calculation
-                subtraction: 0
+                subtraction: 0,
+                deserveDisqual: null
             };
         }
         
         const stat = stats[email];
         const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
         const entryDateObj = new Date(entryDate);
-        const prevDate = new Date(entryDateObj);
-        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDate = new Date(entryDate);
+        prevDate.setHours(0, 0, 0, 0);
+        prevDate.setDate(prevDate.getDate()-1);
+        entryDateObj.setHours(0, 0, 0, 0);
         const minutes = durationToMinutes(entry.hours);
         
         // Track daily minutes (accumulate if multiple entries per day)
@@ -303,25 +308,30 @@ function getParticipantsStats(data) {
         stat.dailyMinutes[entryDate] += minutes;
         
         // Calculate streak factor
-        if (prevDate == stat.lastReadingDate) {
+        
+        let asdf = stat.lastReadingDate ? stat.lastReadingDate.toISOString() : '';
+        if (prevDate.toISOString() == asdf && stat.lastReadingMinutes > 3) {
+            stat.lastReadingMinutes = minutes;
             stat.currentStreak++;
-        } else if (entryDateObj != stat.lastReadingDate) {
+        } else if (entryDateObj.toISOString() != asdf) {
             stat.currentStreak = 1;
+            stat.lastReadingMinutes = minutes;
+        } else {
+            stat.lastReadingMinutes += minutes;
         }
+        // Update last reading date
+        stat.lastReadingDate = entryDateObj;
         
         let factor = 1;
+        if (stat.currentStreak >= 2) factor = 1.15;
         if (stat.currentStreak >= 3) factor = 1.2;
-        else if (stat.currentStreak >= 2) factor = 1.15;
-        
         // Update totals
-        stat.totalIdeas += calculateIdeas(minutes) + (EXTRA_IDEAS[entry.extra] || 0);
+        stat.totalIdeas += calculateIdeas(minutes)*factor + (EXTRA_IDEAS[entry.extra] || 0);
+        stat.extraIdeas += (EXTRA_IDEAS[entry.extra] || 0);
         stat.totalMinutes += minutes;
         stat.readingDays.add(entryDate);
         
-        // Update last reading date
-        if (!stat.lastReadingDate || entryDateObj > new Date(stat.lastReadingDate)) {
-            stat.lastReadingDate = entryDate;
-        }
+        
     }
     
     // Calculate streaks and subtractions
@@ -349,7 +359,11 @@ function getParticipantsStats(data) {
             const minutesRead = stat.dailyMinutes[dateStr] || 0;
             if (minutesRead < 3) {
                 stat.subtraction += 10;
-            } 
+            }
+
+            if (stat.deserveDisqual == null && stat.totalIdeas < stat.subtraction) {
+                stat.deserveDisqual = d.toISOString().split('T')[0];
+            }
         }
         
         // Apply subtraction to total ideas

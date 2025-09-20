@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadData() {
     try {
         allData = await loadRawResponses();
-        // allData.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
+        allData = allData.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
         
@@ -77,7 +77,7 @@ function updateCurrentResults() {
 // Update Ideas Chart
 function updateIdeasChart(participants) {
     const ctx = document.getElementById('ideasChart').getContext('2d');
-    const sortedParticipants = participants.sort((a, b) => b.totalIdeas - a.totalIdeas);
+    const sortedParticipants = participants.sort((a, b) => b.totalIdeas - a.totalIdeas).filter(p => p.totalIdeas > 0);
     
     if (charts.ideas) {
         charts.ideas.destroy();
@@ -198,7 +198,7 @@ function updateCountdown() {
     // console.log(participants);
     // Calculate days remaining for each participant
     const countdownData = participants.map(p => {
-        const daysRemaining = Math.floor(p.totalIdeas / 10);
+        const daysRemaining = Math.ceil(p.totalIdeas / 10);
         return {
             ...p,
             daysRemaining: Math.min(21, daysRemaining),
@@ -210,7 +210,7 @@ function updateCountdown() {
     countdownData.forEach((participant, index) => {
         const row = tbody.insertRow();
         row.innerHTML = `
-            <td><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span></td>
+            <td><span class="rank-badge rank-other">${index + 1}</span></td>
             <td>${participant.name}</td>
             <td>${participant.totalIdeas.toFixed(1)}</td>
             <td>
@@ -229,15 +229,15 @@ function updateExpelled() {
     const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const content = document.getElementById('expelledContent');
-    
+    const dayMs = 24*60*60*1000;
     // Find participants eligible for expulsion
     const expelled = participants.filter(p => 
         (p.totalIdeas <= 0) || (getCurrentWeek() >= 3 && p.totalIdeas < 100)
     ).map(p => ({
         ...p,
         reason: p.totalIdeas <= 0 ? 'وصول الأفكار للصفر' : 'عدم تحقيق 100 فكرة بنهاية الأسبوع الثالث',
-        expulsionDate: new Date().toISOString().split('T')[0]
-    }));
+        expulsionDate: p.deserveDisqual
+    })).filter(p => (new Date()) - (new Date(p.expulsionDate)) <= dayMs*8);
     
     if (expelled.length === 0) {
         content.innerHTML = `
