@@ -8,7 +8,7 @@ let allData = [];
 let currentSeason = null;
 let charts = {};
 
-const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbwiQdFE8MQOz1o4jeqxEdmOEpr0PGf-QkaOqMQmZ2PDsVoisHJG5gwFOhN1RKTo9NAmcg';
+const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbyS7Gc6LUC6XuI5wKSrTviq88wU38JpJFZ2uixtkClbx0zuS6cl8GG0uLQ_Jh3dh3_tfA';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
 
 async function loadRawResponses() {
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadData() {
     try {
         allData = await loadRawResponses();
-        allData = allData.sort((a, b) => new Date(a.timestamp) < new Date(b.timestamp));
+        allData = allData.sort((a, b) => parseDate(a.timestamp) < parseDate(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
         
@@ -69,9 +69,11 @@ function showPage(pageId) {
 
 // Update current results
 function updateCurrentResults() {
-    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     
+    // console.log("Malaki", participants);
+
     // Ideas Chart
     updateIdeasChart(participants);
     
@@ -143,7 +145,7 @@ function updateIdeasChart(participants) {
 // Update Streak Chart
 function updateStreakChart(participants) {
     const ctx = document.getElementById('streakChart').getContext('2d');
-    const sortedParticipants = participants.sort((a, b) => b.streak - a.streak).slice(0, 10);
+    const sortedParticipants = participants.sort((a, b) => b.streak - a.streak).filter(p => p.streak > 0);
     
     if (charts.streak) {
         charts.streak.destroy();
@@ -156,8 +158,8 @@ function updateStreakChart(participants) {
             datasets: [{
                 label: 'الأيام المتتالية',
                 data: sortedParticipants.map(p => p.streak),
-                backgroundColor: CHART_BACKGROUND_COLOR2,
-                borderColor: CHART_BORDER_COLOR2,
+                backgroundColor: CHART_BACKGROUND_COLOR,
+                borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -182,7 +184,10 @@ function updateStreakChart(participants) {
                     ticks: {
                         font: {
                             family: 'Cairo'
-                        }
+                        },
+                        // stepSize: 1,
+                        // beginAtZero: true,
+                        // precision: 0
                     }
                 },
                 x: {
@@ -199,7 +204,7 @@ function updateStreakChart(participants) {
 
 // Update countdown table
 function updateCountdown() {
-    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const tbody = document.getElementById('countdownBody');
     // console.log(participants);
@@ -232,7 +237,7 @@ function updateCountdown() {
 
 // Update expelled participants
 function updateExpelled() {
-    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const content = document.getElementById('expelledContent');
     const dayMs = 24*60*60*1000;
@@ -281,45 +286,36 @@ function updateExpelled() {
 
 // Update records
 function updateRecords() {
-    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const grid = document.getElementById('recordsGrid');
     
-    // Most reading in one day
-    const dailyReading = {};
-    seasonData.forEach(entry => {
-        const key = `${entry.name}-${entry.date}`;
-        if (!dailyReading[key]) {
-            dailyReading[key] = { 
-                name: entry.name, 
-                date: entry.date, 
-                ideas: 0 
-            };
-        }
-        dailyReading[key].ideas += entry.totalIdeas || 0;
-    });
-    
-    const topDailyReading = Object.values(dailyReading)
-        .sort((a, b) => b.ideas - a.ideas)
-        .slice(0, 3);
-    
     // Most consistent participants
     const topStreak = participants
-        .sort((a, b) => b.streak - a.streak)
+        .sort((a, b) => b.maxStreak - a.maxStreak)
         .slice(0, 3);
     
     // Highest total ideas
+    let topDuration = [];
+    participants.forEach(person => {
+        topDuration.push({
+            name: person.name,
+            minutes: Math.max(...Object.values(person.dailyMinutes))
+        });
+    });
+    topDuration = topDuration.sort((a, b) => b.minutes - a.minutes).slice(0, 3);
+    console.log(topDuration);
     const topIdeas = participants
         .sort((a, b) => b.totalIdeas - a.totalIdeas)
         .slice(0, 3);
-    
+
     grid.innerHTML = `
         <div class="record-card">
             <h3><i class="fas fa-star"></i> أكثر قراءة في يوم واحد</h3>
-            ${topDailyReading.map((record, index) => `
+            ${topDuration.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.ideas.toFixed(1)} فكرة</span>
+                    <span>${record.minutes} دقيقة</span>
                 </div>
             `).join('')}
         </div>
@@ -329,7 +325,7 @@ function updateRecords() {
             ${topStreak.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.streak} يوم متتالي</span>
+                    <span>${record.maxStreak} يوم متتالي</span>
                 </div>
             `).join('')}
         </div>
@@ -339,7 +335,7 @@ function updateRecords() {
             ${topIdeas.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.totalIdeas.toFixed(1)} فكرة</span>
+                    <span>${record.totalIdeas} فكرة</span>
                 </div>
             `).join('')}
         </div>
@@ -348,14 +344,14 @@ function updateRecords() {
 
 // Update seasonsComparison statistics
 function updateseasonsComparisonStats() {
-    const seasons = [...new Set(allData.map(d => getSeasonFromDate(new Date(d.timestamp))))];
+    const seasons = [...new Set(allData.map(d => getSeasonFromDate(parseDate(d.timestamp))))];
     const participants = [...new Set(allData.map(d => emailToName(d.email)))];
     const participantsStats = getParticipantsStats(allData);
     const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
     const avgIdeas = totalIdeas / participants.length;
     
     const seasonStats = seasons.map(season => {
-        const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === season);
+        const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === season);
         const participantsStats = getParticipantsStats(seasonData);
         const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
         const totalMinutes = seasonData.reduce((sum, d) => sum + (durationToMinutes(d.hours) || 0), 0);

@@ -1,3 +1,20 @@
+function parseDate(dateString) {
+  const [datePart, timePart] = dateString.split(" ");
+  const [day, month, year] = datePart.split("/");
+  const [hours, minutes, seconds] = timePart.split(":");
+  
+  return new Date(year, month - 1, day, hours, minutes, seconds);
+}
+
+Date.prototype.toYMD = function() {
+  const year = this.getFullYear();
+  const month = String(this.getMonth() + 1).padStart(2, '0');
+  const day = String(this.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
+
 function hijriToGregorian(hYear, hMonth, hDay) {
     const formatter = new Intl.DateTimeFormat('en-CA', {
         calendar: 'islamic-umalqura',
@@ -270,7 +287,7 @@ function getParticipantsStats(data) {
     
     // Initialize stats map
     const stats = {};
-    data = data.sort((a, b) => (new Date(a.timestamp)) - (new Date(b.timestamp)));
+    data = data.sort((a, b) => (parseDate(a.timestamp)) - (parseDate(b.timestamp)));
     // Main processing loop
     for (let i = 0; i < data.length; i++) {
         const entry = data[i];
@@ -282,6 +299,7 @@ function getParticipantsStats(data) {
                 totalIdeas: 0,
                 totalMinutes: 0,
                 streak: 0,
+                maxStreak: 0,
                 currentStreak: 0,
                 lastReadingDate: null,
                 lastReadingMinutes: 0,
@@ -294,7 +312,7 @@ function getParticipantsStats(data) {
         }
         
         const stat = stats[email];
-        const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
+        const entryDate = parseDate(entry.timestamp).toYMD();
         const entryDateObj = new Date(entryDate);
         const prevDate = new Date(entryDate);
         prevDate.setHours(0, 0, 0, 0);
@@ -319,6 +337,7 @@ function getParticipantsStats(data) {
         } else {
             stat.lastReadingMinutes += minutes;
         }
+        stat.maxStreak = Math.max(stat.maxStreak, stat.currentStreak);
         // Update last reading date
         stat.lastReadingDate = entryDateObj;
         
@@ -336,12 +355,14 @@ function getParticipantsStats(data) {
     
     // Calculate streaks and subtractions
     
-
+    const asdf = new Date();
+    asdf.setDate(asdf.getDate()-1);
+    const yesterdayStrDate = asdf.toYMD();
     Object.keys(stats).forEach(email => {
         const stat = stats[email];
         
         // Calculate streak
-        stat.streak = calculateStreak(stat.readingDays);
+        stat.streak = (stat.dailyMinutes[yesterdayStrDate] || 0  >= 3) ? stat.currentStreak : 0; //calculateStreak(stat.readingDays);
         
         const dateToday = new Date();
         dateToday.setDate(dateToday.getDate() + 1);
@@ -372,7 +393,7 @@ function getParticipantsStats(data) {
         // Clean up temporary data
         // delete stat.dailyMinutes;
     });
-    console.log(stats);
+    // console.log(stats);
     
     // Filter out participants with 0 ideas
     return Object.values(stats);
