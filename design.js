@@ -82,7 +82,7 @@ function updateIdeasChart(participants) {
     if (charts.ideas) {
         charts.ideas.destroy();
     }
-    
+    // createChart(sortedParticipants.map(p => p.name), 'ideasChartMobile', '', sortedParticipants.map(p => p.totalIdeas), '');
     charts.ideas = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -105,7 +105,7 @@ function updateIdeasChart(participants) {
                     labels: {
                         font: {
                             family: 'Cairo',
-                            size: 14
+                            size: 16
                         }
                     }
                 }

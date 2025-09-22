@@ -1,6 +1,6 @@
-function createChart(data, chartId, mobileId, valueKey, unit) {
-    const maxValue = Math.max(...data.map(item => item[valueKey]));
-    const minValue = Math.min(...data.map(item => item[valueKey]));
+function createChart(keys, values, chartId) {
+    const maxValue = Math.max(values);
+    const minValue = Math.min(values);
     
     // Desktop Chart
     const chartContainer = document.getElementById(chartId);
@@ -9,7 +9,7 @@ function createChart(data, chartId, mobileId, valueKey, unit) {
         
         return `
             <div class="chart-bar">
-                <div class="bar" style="height: ${height}px">
+                <div class="bar" style="width: ${height}px">
                     <div class="bar-value">${item[valueKey]}</div>
                 </div>
                 <div class="bar-label">${item.name}<br>${item[valueKey]}</div>
@@ -18,28 +18,28 @@ function createChart(data, chartId, mobileId, valueKey, unit) {
     }).join('');
 
     // Mobile View - Calculate minimum width needed for shortest name
-    const mobileContainer = document.getElementById(mobileId);
+    // const mobileContainer = document.getElementById(chartId);
     
-    // Find the minimum width needed for the person with lowest score
-    const personWithMinValue = data.find(item => item[valueKey] === minValue);
-    const minRequiredWidth = personWithMinValue.name.length * 10 + 80; // 10px per character + 80px for padding and score
+    // // Find the minimum width needed for the person with lowest score
+    // const personWithMinValue = data.find(item => item[valueKey] === minValue);
+    // const minRequiredWidth = personWithMinValue.name.length * 10 + 80; // 10px per character + 80px for padding and score
     
-    mobileContainer.innerHTML = data.map(item => {
-        // Calculate proportional width based on value
-        const proportionalWidth = (item[valueKey] / maxValue) * 100;
+    // mobileContainer.innerHTML = data.map(item => {
+    //     // Calculate proportional width based on value
+    //     const proportionalWidth = (item[valueKey] / maxValue) * 100;
         
-        // Scale the width: shortest gets minRequiredWidth, longest gets 100%
-        const scaledWidth = ((proportionalWidth / 100) * (100 - (minRequiredWidth / 3))) + (minRequiredWidth / 3);
+    //     // Scale the width: shortest gets minRequiredWidth, longest gets 100%
+    //     const scaledWidth = ((proportionalWidth / 100) * (100 - (minRequiredWidth / 3))) + (minRequiredWidth / 3);
         
-        const rankClass = getRankCardClass(item.rank);
+    //     const rankClass = getRankCardClass(item.rank);
         
-        return `
-            <div class="leader-card ${rankClass}" style="width: ${scaledWidth}%;">
-                <div class="card-content">
-                    <div class="card-name">${item.name}</div>
-                    <div class="card-score">${item[valueKey]}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    //     return `
+    //         <div class="leader-card ${rankClass}" style="width: ${scaledWidth}%;">
+    //             <div class="card-content">
+    //                 <div class="card-name">${item.name}</div>
+    //                 <div class="card-score">${item[valueKey]}</div>
+    //             </div>
+    //         </div>
+    //     `;
+    // }).join('');
 }
