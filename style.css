@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');
 
 :root {
-    --primary-gradient: linear-gradient(135deg, #6879e3 0%, #754fa7 100%);
-    --primary-color: #6879e3;
-    --secondary-color: #754fa7;
+    --primary-gradient: linear-gradient(-135deg, #af41b1 0%, #216d9e 100%);
+    --primary-color: #152c5b;
+    --secondary-color: #7c3fa3;
     --background: #f8faff;
     --card-bg: white;
     --text-primary: #2d3748;
@@ -88,6 +88,7 @@ body {
 
 .nav-btn:hover, .nav-btn.active {
     background: var(--primary-gradient);
+    border: white;
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(104, 121, 227, 0.3);
@@ -141,7 +142,7 @@ body {
 }
 
 .stat-card {
-    background: var(--primary-gradient);
+    background: var(--secondary-color);
     color: white;
     padding: 1.5rem;
     border-radius: 12px;
@@ -185,7 +186,7 @@ th, td {
 }
 
 th {
-    background: var(--primary-gradient);
+    background: var(--primary-color);
     color: white;
     font-weight: 600;
 }
@@ -206,7 +207,7 @@ tr:hover {
     margin-left: 0.5rem;
 }
 
-.rank-1 { background: #ffd700; }
+.rank-1 { background: #e1bf01; }
 .rank-2 { background: #c0c0c0; }
 .rank-3 { background: #cd7f32; }
 .rank-other { background: var(--primary-color); }
@@ -277,7 +278,7 @@ tr:hover {
 }
 
 .record-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-color);
     color: white;
     padding: 1.5rem;
     border-radius: 12px;

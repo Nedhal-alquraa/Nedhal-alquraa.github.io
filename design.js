@@ -1,4 +1,9 @@
 // Global variables
+const CHART_BORDER_COLOR = '#20448eff';
+const CHART_BACKGROUND_COLOR = '#152c5b';
+const CHART_BORDER_COLOR2 = '#7c3fa3';
+const CHART_BACKGROUND_COLOR2 = '#7c3fa3';
+
 let allData = [];
 let currentSeason = null;
 let charts = {};
@@ -90,8 +95,8 @@ function updateIdeasChart(participants) {
             datasets: [{
                 label: 'إجمالي الأفكار',
                 data: sortedParticipants.map(p => p.totalIdeas),
-                backgroundColor: 'rgba(104, 121, 227, 0.8)',
-                borderColor: 'rgba(104, 121, 227, 1)',
+                backgroundColor: CHART_BACKGROUND_COLOR,
+                borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -117,14 +122,16 @@ function updateIdeasChart(participants) {
                         display: true,
                         autoSkip: false,
                         font: {
-                            family: 'Cairo'
+                            family: 'Cairo',
+                            size: 15
                         }
                     }
                 },
                 x: {
                     ticks: {
                         font: {
-                            family: 'Cairo'
+                            family: 'Cairo',
+                            
                         }
                     }
                 }
@@ -149,8 +156,8 @@ function updateStreakChart(participants) {
             datasets: [{
                 label: 'الأيام المتتالية',
                 data: sortedParticipants.map(p => p.streak),
-                backgroundColor: 'rgba(117, 79, 167, 0.8)',
-                borderColor: 'rgba(117, 79, 167, 1)',
+                backgroundColor: CHART_BACKGROUND_COLOR2,
+                borderColor: CHART_BORDER_COLOR2,
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -210,16 +217,15 @@ function updateCountdown() {
     countdownData.forEach((participant, index) => {
         const row = tbody.insertRow();
         row.innerHTML = `
-            <td><span class="rank-badge rank-other">${index + 1}</span></td>
             <td>${participant.name}</td>
-            <td>${participant.totalIdeas.toFixed(1)}</td>
             <td>
-                <div class="countdown ${participant.status}">
-                    <i class="fas fa-clock"></i>
-                    ${participant.daysRemaining} يوم
-                </div>
+            <div class="countdown ${participant.status}">
+            <i class="fas fa-clock"></i>
+            ${participant.daysRemaining} يوم
+            </div>
             </td>
             <td><span class="status-indicator status-${participant.status}">${getStatusText(participant.status)}</span></td>
+            <td>${participant.totalIdeas.toFixed(1)}</td>
         `;
     });
 }
@@ -254,18 +260,16 @@ function updateExpelled() {
                     <thead>
                         <tr>
                             <th>اسم المشارك</th>
-                            <th>الأفكار الحالية</th>
-                            <th>سبب الطرد</th>
                             <th>تاريخ الاستحقاق</th>
+                            <th>سبب الطرد</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${expelled.map(p => `
                             <tr>
                                 <td>${p.name}</td>
-                                <td>${p.totalIdeas.toFixed(1)}</td>
-                                <td>${p.reason}</td>
                                 <td>${p.expulsionDate}</td>
+                                <td>${p.reason}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -350,6 +354,25 @@ function updateseasonsComparisonStats() {
     const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
     const avgIdeas = totalIdeas / participants.length;
     
+    const seasonStats = seasons.map(season => {
+        const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === season);
+        const participantsStats = getParticipantsStats(seasonData);
+        const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
+        const totalMinutes = seasonData.reduce((sum, d) => sum + (durationToMinutes(d.hours) || 0), 0);
+        const countExpelled = participantsStats.reduce((sum, d) => sum + (d.deserveDisqual !== null ? 1 : 0), 0);
+        const uniqueParticipants = new Set(seasonData.map(d => emailToName(d.email))).size;
+        
+        return {
+            season,
+            totalIdeas,
+            totalMinutes,
+            countExpelled,
+            participants: uniqueParticipants,
+            avgMinutes: totalMinutes / uniqueParticipants || 0,
+            avgIdeas: totalIdeas / uniqueParticipants || 0
+        };
+    });
+
     const statsContainer = document.getElementById('seasonsComparisonStats');
     statsContainer.innerHTML = `
         <div class="stat-card">
@@ -369,45 +392,38 @@ function updateseasonsComparisonStats() {
             <p>عدد المواسم</p>
         </div>
     `;
-    
+
     // Update seasons comparison chart
-    updateSeasonsChart(seasons);
+    updateSeasonsChart(seasonStats);
+
+    // Updating the table
+    const tbody = document.getElementById('seasonsTableBody');
+    seasonStats.forEach((season, index) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${season.season}</td>
+            <td>${season.participants}</td>
+            <td>${season.countExpelled}</td>
+        `;
+    });
 }
 
 // Update seasons comparison chart
-function updateSeasonsChart(seasons) {
+function updateSeasonsChart(seasonStats) {
     const ctx = document.getElementById('seasonsChart').getContext('2d');
-    
-    const seasonStats = seasons.map(season => {
-        const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === season);
-        const participantsStats = getParticipantsStats(seasonData);
-        const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
-        const totalMinutes = seasonData.reduce((sum, d) => sum + (durationToMinutes(d.hours) || 0), 0);
-        const uniqueParticipants = new Set(seasonData.map(d => emailToName(d.email))).size;
-        
-        return {
-            season,
-            totalIdeas,
-            totalMinutes,
-            participants: uniqueParticipants,
-            avgIdeas: totalIdeas / uniqueParticipants || 0
-        };
-    });
-    console.log(seasonStats);
     if (charts.seasons) {
         charts.seasons.destroy();
     }
-    console.log(seasonStats.map(s => s.totalIdeas));
     charts.seasons = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: seasonStats.map(s => s.season),
             datasets: [
                 {
-                    label: 'إجمالي دقائق القراءة',
-                    data: seasonStats.map(s => s.totalMinutes),
-                    backgroundColor: 'rgba(104, 121, 227, 0.8)',
-                    borderColor: 'rgba(104, 121, 227, 1)',
+                    label: 'متوسط دقائق القراءة',
+                    data: seasonStats.map(s => s.avgMinutes),
+                    backgroundColor: CHART_BACKGROUND_COLOR2,
+                    borderColor: CHART_BORDER_COLOR2,
                     borderWidth: 2
                 }
                 // ,
