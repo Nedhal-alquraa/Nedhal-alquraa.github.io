@@ -382,11 +382,13 @@ function updateSeasonsChart(seasons) {
         const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === season);
         const participantsStats = getParticipantsStats(seasonData);
         const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
+        const totalMinutes = seasonData.reduce((sum, d) => sum + (durationToMinutes(d.hours) || 0), 0);
         const uniqueParticipants = new Set(seasonData.map(d => emailToName(d.email))).size;
         
         return {
             season,
             totalIdeas,
+            totalMinutes,
             participants: uniqueParticipants,
             avgIdeas: totalIdeas / uniqueParticipants || 0
         };
@@ -402,12 +404,20 @@ function updateSeasonsChart(seasons) {
             labels: seasonStats.map(s => s.season),
             datasets: [
                 {
-                    label: 'إجمالي الأفكار',
-                    data: seasonStats.map(s => s.totalIdeas),
+                    label: 'إجمالي دقائق القراءة',
+                    data: seasonStats.map(s => s.totalMinutes),
                     backgroundColor: 'rgba(104, 121, 227, 0.8)',
                     borderColor: 'rgba(104, 121, 227, 1)',
                     borderWidth: 2
                 }
+                // ,
+                // {
+                //     label: 'إجمالي الأفكار',
+                //     data: seasonStats.map(s => s.totalIdeas),
+                //     backgroundColor: 'rgba(112, 33, 141, 0.8)',
+                //     borderColor: 'rgba(124, 31, 113, 1)',
+                //     borderWidth: 2
+                // }
             ]
         },
         options: {
