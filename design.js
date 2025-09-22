@@ -277,7 +277,7 @@ function updateExpelled() {
 
 // Update records
 function updateRecords() {
-    const seasonData = allData.filter(d => d.season === currentSeason);
+    const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
     const grid = document.getElementById('recordsGrid');
     
@@ -344,9 +344,10 @@ function updateRecords() {
 
 // Update seasonsComparison statistics
 function updateseasonsComparisonStats() {
-    const seasons = [...new Set(allData.map(d => d.season))];
-    const participants = [...new Set(allData.map(d => d.name))];
-    const totalIdeas = allData.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
+    const seasons = [...new Set(allData.map(d => getSeasonFromDate(new Date(d.timestamp))))];
+    const participants = [...new Set(allData.map(d => emailToName(d.email)))];
+    const participantsStats = getParticipantsStats(allData);
+    const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
     const avgIdeas = totalIdeas / participants.length;
     
     const statsContainer = document.getElementById('seasonsComparisonStats');
@@ -356,7 +357,7 @@ function updateseasonsComparisonStats() {
             <p>إجمالي المشاركين</p>
         </div>
         <div class="stat-card">
-            <h3>${totalIdeas.toLocaleString('ar')}</h3>
+            <h3>${totalIdeas.toFixed(1)}</h3>
             <p>إجمالي الأفكار المحققة</p>
         </div>
         <div class="stat-card">
@@ -378,9 +379,10 @@ function updateSeasonsChart(seasons) {
     const ctx = document.getElementById('seasonsChart').getContext('2d');
     
     const seasonStats = seasons.map(season => {
-        const seasonData = allData.filter(d => d.season === season);
-        const totalIdeas = seasonData.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
-        const uniqueParticipants = new Set(seasonData.map(d => d.name)).size;
+        const seasonData = allData.filter(d => getSeasonFromDate(new Date(d.timestamp)) === season);
+        const participantsStats = getParticipantsStats(seasonData);
+        const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
+        const uniqueParticipants = new Set(seasonData.map(d => emailToName(d.email))).size;
         
         return {
             season,
@@ -389,11 +391,11 @@ function updateSeasonsChart(seasons) {
             avgIdeas: totalIdeas / uniqueParticipants || 0
         };
     });
-    
+    console.log(seasonStats);
     if (charts.seasons) {
         charts.seasons.destroy();
     }
-    
+    console.log(seasonStats.map(s => s.totalIdeas));
     charts.seasons = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -404,21 +406,12 @@ function updateSeasonsChart(seasons) {
                     data: seasonStats.map(s => s.totalIdeas),
                     backgroundColor: 'rgba(104, 121, 227, 0.8)',
                     borderColor: 'rgba(104, 121, 227, 1)',
-                    borderWidth: 2,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'عدد المشاركين',
-                    data: seasonStats.map(s => s.participants),
-                    backgroundColor: 'rgba(117, 79, 167, 0.8)',
-                    borderColor: 'rgba(117, 79, 167, 1)',
-                    borderWidth: 2,
-                    yAxisID: 'y1'
+                    borderWidth: 2
                 }
             ]
         },
         options: {
-            indexAxis: 'y',
+            indexAxis: 'x',
             responsive: true,
             maintainAspectRatio: false,
             interaction: {
@@ -444,7 +437,6 @@ function updateSeasonsChart(seasons) {
                     }
                 },
                 y: {
-                    type: 'linear',
                     display: true,
                     position: 'right',
                     ticks: {
@@ -452,19 +444,6 @@ function updateSeasonsChart(seasons) {
                             family: 'Cairo'
                         }
                     }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    ticks: {
-                        font: {
-                            family: 'Cairo'
-                        }
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
                 }
             }
         }
