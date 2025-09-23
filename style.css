@@ -93,6 +93,13 @@ body {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(104, 121, 227, 0.3);
 }
+button[disabled], button[disabled]:hover{
+  border: 1px solid #999999 !important;
+  background: #cccccc !important;
+  transform: none !important;
+  color: #666666 !important;
+  box-shadow: none !important;
+}
 
 /* Main Content */
 .main-content {
