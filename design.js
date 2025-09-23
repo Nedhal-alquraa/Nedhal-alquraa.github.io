@@ -59,12 +59,11 @@ function checkData() {
     tbody.innerHTML = '';
     allData.forEach((entry, index) => {
         if (durationToMinutes(entry.hours) > 300) {
-            const row = tbody.insertRow();
-            row.innerHTML = `
+            tbody.innerHTML = `<tr>
                 <td>${entry.timestamp}</td>
                 <td>${emailToName(entry.email)}</td>
                 <td>${entry.hours}</td>
-            `;
+            </tr>` + tbody.innerHTML;
             adminWarnings.push({index, entry});
             if (durationToMinutes(entry.hours) > 1440) {
                 let hh = entry.hours.split(':')[0];
@@ -143,6 +142,7 @@ function updateIdeasChart(participants) {
             },
             scales: {
                 y: {
+                    
                     beginAtZero: true,
                     ticks: {
                         display: true,
@@ -154,7 +154,9 @@ function updateIdeasChart(participants) {
                     }
                 },
                 x: {
+                    type: 'logarithmic',
                     ticks: {
+                        
                         font: {
                             family: 'Cairo',
                             
@@ -339,7 +341,7 @@ function updateRecords() {
             ${topDuration.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.minutes} دقيقة</span>
+                    <span>${formatTime(record.minutes)} ساعة</span>
                 </div>
             `).join('')}
         </div>

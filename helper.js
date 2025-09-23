@@ -258,7 +258,7 @@ function durationToMinutes(duration) {
 function formatTime(minutes) {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return `${hours}:${mins}:00`;
+    return `${hours}:${mins.toString().padStart(2, '0')}`;
 }
 
 // Format date
@@ -492,9 +492,9 @@ function applyAdminMode() {
     });
 }
 
-if (getCookie('MunadhelIsHere') == '1') {
-    applyAdminMode();
-}
+// if (getCookie('MunadhelIsHere') == '1') {
+//     applyAdminMode();
+// }
 
 let asdfClicksCount = 0;
 document.querySelector('#nedhalIcon').addEventListener('click', function() {
