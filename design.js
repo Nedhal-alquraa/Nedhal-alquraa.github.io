@@ -361,7 +361,7 @@ function updateRecords() {
             ${topIdeas.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.totalIdeas} فكرة</span>
+                    <span>${Math.round(record.totalIdeas)} فكرة</span>
                 </div>
             `).join('')}
         </div>
