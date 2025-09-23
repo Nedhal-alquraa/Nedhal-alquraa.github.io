@@ -7,6 +7,7 @@ const CHART_BACKGROUND_COLOR2 = '#7c3fa3';
 let allData = [];
 let currentSeason = null;
 let charts = {};
+let adminWarnings = [];
 
 const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbyS7Gc6LUC6XuI5wKSrTviq88wU38JpJFZ2uixtkClbx0zuS6cl8GG0uLQ_Jh3dh3_tfA';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
@@ -40,6 +41,9 @@ async function loadData() {
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
         
+        // Checking data
+        checkData();
+
         updateCurrentResults();
         updateCountdown();
         updateExpelled();
@@ -48,6 +52,26 @@ async function loadData() {
     } catch (error) {
         console.error('Error loading data:', error);
     }
+}
+
+function checkData() {
+    const tbody = document.getElementById('adminWarnings');
+    tbody.innerHTML = '';
+    allData.forEach((entry, index) => {
+        if (durationToMinutes(entry.hours) > 300) {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${entry.timestamp}</td>
+                <td>${emailToName(entry.email)}</td>
+                <td>${entry.hours}</td>
+            `;
+            adminWarnings.push({index, entry});
+            if (durationToMinutes(entry.hours) > 1440) {
+                let hh = entry.hours.split(':')[0];
+                entry.hours = `0:${hh}:00`;
+            }
+        }
+    });
 }
 
 // Show specific page

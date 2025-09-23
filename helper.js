@@ -455,3 +455,53 @@ function getTimeAgo(dateString) {
     if (diffDays <= 30) return `منذ ${Math.ceil(diffDays / 7)} أسابيع`;
     return `منذ ${Math.ceil(diffDays / 30)} شهور`;
 }
+
+// -- Cookie Utils --
+function setCookie(name, value, daysToExpire) {
+    let expires = "";
+    if (daysToExpire) {
+        const date = new Date();
+        date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        let cookie = cookies[i];
+        while (cookie.charAt(0) === ' ') {
+            cookie = cookie.substring(1, cookie.length);
+        }
+        if (cookie.indexOf(nameEQ) === 0) {
+            return cookie.substring(nameEQ.length, cookie.length);
+        }
+    }
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+function applyAdminMode() {
+    document.querySelectorAll('.admin-only').forEach(div => {
+        div.classList.remove('admin-only');
+    });
+}
+
+if (getCookie('MunadhelIsHere') == '1') {
+    applyAdminMode();
+}
+
+let asdfClicksCount = 0;
+document.querySelector('#nedhalIcon').addEventListener('click', function() {
+    asdfClicksCount++;
+    if (asdfClicksCount == 6) {
+        applyAdminMode();
+        setCookie('MunadhelIsHere', '1', 71);
+        alert('تم تفعيل وضع الإدارة');
+    }
+});

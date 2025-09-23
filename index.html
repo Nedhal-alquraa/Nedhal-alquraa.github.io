@@ -26,7 +26,7 @@
 <body>
     <div class="header">
         <div class="container">
-            <h1><i class="fas fa-book-open"></i> نضال القراء </h1>
+            <h1><i id="nedhalIcon" class="fas fa-book-open"></i> نضال القراء </h1>
             <p> القراءة اليومية </p>
         </div>
     </div>
@@ -51,6 +51,9 @@
                 </button>
                 <button class="nav-btn" onclick="showPage('overall')" role="tab" tabindex="-1">
                     <i class="fas fa-chart-line"></i> النتائج الإجمالية
+                </button>
+                <button class="nav-btn admin-only" onclick="showPage('admin')" role="tab" tabindex="-1">
+                    <i class="fas fa-chart-line"></i> الإدارة
                 </button>
             </div>
         </div>
@@ -237,6 +240,22 @@
                     <div class="chart-container">
                         <canvas id="overall_streakChart" style="box-sizing: border-box; display: block; height: 400px; width: 930.4px;" width="1163" height="500"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <div id="admin" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-exclamation-triangle"></i> التحذيرات</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الاسم</th>
+                                <th>المدة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminWarnings"></tbody>
+                    </table>
                 </div>
             </div>
         </div>

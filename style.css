@@ -358,3 +358,7 @@ tr:hover {
     background: #fed7d7;
     color: #c53030;
 }
+
+.admin-only {
+    display: none !important;
+}
