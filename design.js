@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load data from Google Sheets
 async function loadData() {
     try {
+        const startLoading = new Date();
         allData = await loadRawResponses();
+        const endRequest = new Date();
+        console.log("Loading AppScript took:", (endRequest-startLoading)/1000);
         allData = allData.sort((a, b) => parseDate(a.timestamp) < parseDate(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
@@ -49,6 +52,9 @@ async function loadData() {
         updateExpelled();
         updateRecords();
         updateseasonsComparisonStats();
+        const endLoading = new Date();
+        console.log("Total loading:", (endLoading - startLoading)/1000);
+        document.getElementById('nedhalIcon').style.animation = 'none';
     } catch (error) {
         console.error('Error loading data:', error);
     }
