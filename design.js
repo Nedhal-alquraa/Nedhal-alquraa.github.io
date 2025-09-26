@@ -131,7 +131,7 @@ function updateIdeasChart(participants) {
                 backgroundColor: CHART_BACKGROUND_COLOR,
                 // barThickness: 30,    
                 barPercentage: 1.0, // Increase bar width (0.8 means 80% of the allocated space per bar)
-                categoryPercentage: 0.8, // Reduce to increase spacing between bars (70% of the category width)
+                categoryPercentage: 0.7, // Reduce to increase spacing between bars (70% of the category width)
                 borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
@@ -225,6 +225,9 @@ function updateStreakChart(participants) {
                             size: 14
                         }
                     }
+                },
+                datalabels: {
+                    display: false
                 }
             },
             scales: {
@@ -497,6 +500,9 @@ function updateSeasonsChart(seasonStats) {
                             size: 14
                         }
                     }
+                },
+                datalabels: {
+                    display: false
                 }
             },
             scales: {

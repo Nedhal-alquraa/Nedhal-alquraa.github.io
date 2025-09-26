@@ -224,6 +224,7 @@ tr:hover {
     position: relative;
     min-height: 600px;
     height: auto;
+    width: 100%;    
     margin: 2rem 0;
 }
 
