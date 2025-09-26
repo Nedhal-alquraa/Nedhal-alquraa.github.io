@@ -118,7 +118,9 @@ function updateIdeasChart(participants) {
     if (charts.ideas) {
         charts.ideas.destroy();
     }
-    // createChart(sortedParticipants.map(p => p.name), 'ideasChartMobile', '', sortedParticipants.map(p => p.totalIdeas), '');
+    // Register the plugin
+    Chart.register(ChartDataLabels);
+
     charts.ideas = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -127,6 +129,9 @@ function updateIdeasChart(participants) {
                 label: 'إجمالي الأفكار',
                 data: sortedParticipants.map(p => p.totalIdeas),
                 backgroundColor: CHART_BACKGROUND_COLOR,
+                // barThickness: 30,    
+                barPercentage: 1.0, // Increase bar width (0.8 means 80% of the allocated space per bar)
+                categoryPercentage: 0.8, // Reduce to increase spacing between bars (70% of the category width)
                 borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
@@ -144,12 +149,25 @@ function updateIdeasChart(participants) {
                             size: 16
                         }
                     }
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    anchor: 'end', // Position labels at the end of the bars
+                    // align: 'end', // Align labels outside the bars
+                    offset: 0, // Distance from the end of the bar
+                    font: {
+                        family: 'Cairo',
+                        size: 12
+                    },
+                    formatter: (value) => Math.round(value) // Display the raw value
                 }
             },
             scales: {
                 y: {
-                    
                     beginAtZero: true,
+                    // barThickness: 30,
+                    // barPercentage: 1.0, // Increase bar width (0.8 means 80% of the allocated space per bar)
+                    // categoryPercentage: 0.1, // Reduce to increase spacing between bars (70% of the category width)
                     ticks: {
                         display: true,
                         autoSkip: false,
@@ -160,12 +178,11 @@ function updateIdeasChart(participants) {
                     }
                 },
                 x: {
-                    type: 'logarithmic',
+                    // barThickness: 30,
+                    type: 'logarithmic', // Note: Logarithmic scale may affect label positioning
                     ticks: {
-                        
                         font: {
-                            family: 'Cairo',
-                            
+                            family: 'Cairo'
                         }
                     }
                 }
