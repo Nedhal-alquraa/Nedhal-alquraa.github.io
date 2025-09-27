@@ -1,6 +1,6 @@
 const EmailToNameMap = {
     'almothanna@alghailani.com': 'المثنى الغيلاني',
-    'hamzah503x@gmail.com': 'حمزة محمد العقيل',
+    'hamzah503x@gmail.com': 'حمزة العقيل',
     'o.m.a.r.s@live.com': 'عمر الشربيني',
     'nader51951@gmail.com': 'نادر الفاضل ',
     'ahmad.ssalem.2004@gmail.com': 'احمد سالم',
@@ -39,7 +39,7 @@ const EmailToNameMap = {
     'mo7ammad4ever@gmail.com': 'محمد خالد مليا',
     'beshavcdd1@gmail.com': 'سعد ماجد الجميعي',
     'shnb1070@gmail.com': 'عبدالله عبده',
-    'abdullah11adel30@gmail.com': 'عبد الله بن عادل بن حبيب الشيخ ',
+    'abdullah11adel30@gmail.com': 'عبد الله بن الشيخ',
     'aayaa200@hotmail.com': 'يونس بن عبدالرحمن العرفج',
     'azizbasalem3@gmail.com': 'عبدالعزيز باسالم',
     'mkjm1423@gmail.com': 'محمد خالد مجيد ',
@@ -47,7 +47,7 @@ const EmailToNameMap = {
     'f.k.a.m.ksa@gmail.com': 'فارس الغامدي',
     'abdulrahman1aak@gmail.com': 'عبدالرحمن أمين ',
     'alyafibaraa@gmail.com': 'براء اليافي',
-    'homodaxa123@gmail.com': 'حمود القثامي ',
+    'homodaxa123@gmail.com': 'حمود القثامي',
     'hassanpay1289@gmail.com': 'حسن عبد الرحمن الحازمي',
     'muhandr24@gmail.com': 'المهند كليبي',
     'bbdallhalswyh@gmail.com': 'عبدالله منصور السويح ',
@@ -90,7 +90,12 @@ const EmailToNameMap = {
     'thabit1423@gmail.com': 'ثابت الغفيـص ',
     'mohammedaloqaubi@gmail.com': 'ابو الوليد العقيبي',
     'alzuialaw@gmail.com': 'عبدالإله العيسي',
-    'abdalrahmanesleem123@gmail.com': 'حذيفه احمد البوريني'
+    'abdalrahmanesleem123@gmail.com': 'حذيفه احمد البوريني',
+    'xoxa11177@gmail.com' : 'أحمد البوزيد',
+    'abdulrhmanalkhayyal@hotmail.com' : 'عبدالرحمن الخيال',
+    'ibraheim255@gmail.com' : 'إبراهيم العويدي',
+    'hmq3344@gmail.com' : 'حمزة العقيل'
+
 };
 
 const EMAIL_TO_NAME = EmailToNameMap;
