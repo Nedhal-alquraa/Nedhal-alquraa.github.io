@@ -261,11 +261,17 @@ function updateCountdown() {
     const tbody = document.getElementById('countdownBody');
     // console.log(participants);
     // Calculate days remaining for each participant
+    let endOfProtectedWeekThisSeason = getSeasonStartDate(currentSeason);
+    endOfProtectedWeekThisSeason.setDate(endOfProtectedWeekThisSeason.getDate() + 7);
+    let endOfProtectedWeekNextSeason = getSeasonStartDate(nameBySeasonID(getSeasonID(currentSeason)+1));
+    endOfProtectedWeekNextSeason.setDate(endOfProtectedWeekNextSeason.getDate() + 7);
+    const maxDays = Math.floor((endOfProtectedWeekNextSeason - (new Date())) /(1000*60*60*24) ); 
+    const minDays = Math.floor((endOfProtectedWeekThisSeason - (new Date())) /(1000*60*60*24) ); 
     const countdownData = participants.map(p => {
         const daysRemaining = Math.ceil(p.totalIdeas / 10);
         return {
             ...p,
-            daysRemaining: Math.min(21, daysRemaining),
+            daysRemaining: Math.min(maxDays, Math.max(daysRemaining, minDays)),
             status: daysRemaining > 5 ? 'safe' : daysRemaining > 3 ? 'warning' : 'danger'
         };
     }).sort((a, b) => a.totalIdeas - b.totalIdeas).filter(p => p.totalIdeas > 0);

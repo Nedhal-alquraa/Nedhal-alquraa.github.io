@@ -280,8 +280,9 @@ function getParticipantsStats(data) {
     
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const seasonStart = getSeasonStartDate(currentSeason);
-    const seasonEnd = new Date(getSeasonStartDate(nameBySeasonID(getSeasonID(currentSeason)+1))-dayMs);
+    const seasonStart = getSeasonStartDate(getSeasonFromDate(parseDate(data[0].timestamp)));
+    const nextSeason = nameBySeasonID(getSeasonID(getSeasonFromDate(seasonStart))+1);
+    const seasonEnd = new Date(getSeasonStartDate(nextSeason)-dayMs);
     const protectedEndDate = new Date(seasonStart); // First 7 days
     protectedEndDate.setDate(seasonStart.getDate() + 7);
     
