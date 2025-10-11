@@ -368,8 +368,9 @@ function getParticipantsStats(data) {
         const dateToday = new Date();
         dateToday.setDate(dateToday.getDate() + 1);
         dateToday.setHours(0, 0, 0, 0);
+
         // Iterate through all days from first to last reading day for this participant
-        for (let d = new Date(seasonStart); d <= dateToday; d.setDate(d.getDate() + 1)) {
+        for (let d = new Date(seasonStart); d <= Math.min(seasonEnd, dateToday); d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
             
             
