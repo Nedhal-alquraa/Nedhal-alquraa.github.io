@@ -125,9 +125,11 @@ function showPage(pageId) {
 function toggleResultsView(mode) {
     currentResultsViewMode = mode;
     
-    // Update toggle button states
-    document.getElementById('totalViewBtn').classList.toggle('active', mode === 'total');
-    document.getElementById('individualViewBtn').classList.toggle('active', mode === 'individual');
+    // Update checkbox state
+    const checkbox = document.getElementById('currentResultsToggle');
+    if (checkbox) {
+        checkbox.checked = mode === 'individual';
+    }
     
     // Show/hide appropriate sections
     document.getElementById('totalResultsView').style.display = mode === 'total' ? 'block' : 'none';
@@ -220,28 +222,24 @@ function displayIndividualResults(participantName, participants) {
             <!-- Invoice -->
             <div class="invoice-section">
                 <h3><i class="fas fa-file-invoice"></i> فاتورة الأفكار</h3>
-                <div class="invoice-table">
-                    <div class="invoice-row">
-                        <span class="invoice-label">أفكار القراءة (قبل عامل الاستمرارية)</span>
+                <div class="invoice-table-compact">
+                    <div class="invoice-row-compact">
+                        <span class="invoice-label">أفكار القراءة</span>
                         <span class="invoice-value">${readingIdeasBeforeFactor.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">الأفكار الإضافية</span>
                         <span class="invoice-value success-text">+${participant.extraIdeas.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">الخصم (${daysWithoutReading} × 10)</span>
                         <span class="invoice-value danger-text">-${participant.subtraction.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row invoice-subtotal">
-                        <span class="invoice-label">المجموع الفرعي</span>
-                        <span class="invoice-value">${(readingIdeasBeforeFactor + participant.extraIdeas - participant.subtraction).toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">عامل الاستمرارية</span>
                         <span class="invoice-value">×${streakFactor.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row invoice-total">
+                    <div class="invoice-row-compact invoice-total-compact">
                         <span class="invoice-label"><strong>الإجمالي النهائي</strong></span>
                         <span class="invoice-value"><strong>${participant.totalIdeas.toFixed(2)}</strong></span>
                     </div>
@@ -350,9 +348,11 @@ let overallResultsViewMode = 'total'; // 'total' or 'individual'
 function toggleOverallResultsView(mode) {
     overallResultsViewMode = mode;
     
-    // Update toggle button states
-    document.getElementById('overallTotalViewBtn').classList.toggle('active', mode === 'total');
-    document.getElementById('overallIndividualViewBtn').classList.toggle('active', mode === 'individual');
+    // Update checkbox state
+    const checkbox = document.getElementById('overallResultsToggle');
+    if (checkbox) {
+        checkbox.checked = mode === 'individual';
+    }
     
     // Show/hide appropriate sections
     document.getElementById('overallTotalResultsView').style.display = mode === 'total' ? 'block' : 'none';
@@ -556,6 +556,10 @@ function displayOverallIndividualResults(participantName, participants) {
     const streakFactor = participant.maxStreak >= 3 ? 1.2 : participant.maxStreak >= 2 ? 1.15 : 1;
     const readingIdeasBeforeFactor = readingIdeas / streakFactor;
     
+    // Get participant's data by season for the chart
+    const participantEmail = Object.keys(EMAIL_TO_NAME).find(email => EMAIL_TO_NAME[email] === participantName);
+    const participantSeasonalData = getParticipantSeasonalBreakdown(participantEmail || participantName);
+    
     const detailsContainer = document.getElementById('overallParticipantDetails');
     detailsContainer.innerHTML = `
         <div class="individual-results-container">
@@ -581,35 +585,144 @@ function displayOverallIndividualResults(participantName, participants) {
             <!-- Invoice -->
             <div class="invoice-section">
                 <h3><i class="fas fa-file-invoice"></i> فاتورة الأفكار الإجمالية</h3>
-                <div class="invoice-table">
-                    <div class="invoice-row">
-                        <span class="invoice-label">أفكار القراءة (قبل عامل الاستمرارية)</span>
+                <div class="invoice-table-compact">
+                    <div class="invoice-row-compact">
+                        <span class="invoice-label">أفكار القراءة</span>
                         <span class="invoice-value">${readingIdeasBeforeFactor.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">الأفكار الإضافية</span>
                         <span class="invoice-value success-text">+${participant.extraIdeas.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">إجمالي الخصومات</span>
                         <span class="invoice-value danger-text">-${participant.subtraction.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row invoice-subtotal">
-                        <span class="invoice-label">المجموع الفرعي</span>
-                        <span class="invoice-value">${(readingIdeasBeforeFactor + participant.extraIdeas - participant.subtraction).toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row">
+                    <div class="invoice-row-compact">
                         <span class="invoice-label">عامل الاستمرارية</span>
                         <span class="invoice-value">×${streakFactor.toFixed(2)}</span>
                     </div>
-                    <div class="invoice-row invoice-total">
+                    <div class="invoice-row-compact invoice-total-compact">
                         <span class="invoice-label"><strong>الإجمالي النهائي</strong></span>
                         <span class="invoice-value"><strong>${participant.totalIdeas.toFixed(2)}</strong></span>
                     </div>
                 </div>
             </div>
+            
+            <!-- Seasonal Breakdown Chart -->
+            <div class="calendar-section">
+                <h3><i class="fas fa-chart-bar"></i> الأفكار حسب الموسم</h3>
+                <div class="seasonal-chart-container">
+                    <canvas id="seasonalBreakdownChart"></canvas>
+                </div>
+            </div>
         </div>
     `;
+    
+    // Render the seasonal breakdown chart
+    renderSeasonalBreakdownChart(participantSeasonalData);
+}
+
+// Get participant's ideas breakdown by season
+function getParticipantSeasonalBreakdown(participantIdentifier) {
+    const seasons = [...new Set(allData.map(d => getSeasonFromDate(parseDate(d.timestamp))))];
+    const seasonalData = [];
+    
+    seasons.forEach(season => {
+        const seasonData = allData.filter(d => {
+            const dateSeason = getSeasonFromDate(parseDate(d.timestamp));
+            const email = emailToName(d.email);
+            return dateSeason === season && (email === participantIdentifier || d.email === participantIdentifier);
+        });
+        
+        if (seasonData.length > 0) {
+            const participants = getParticipantsStats(seasonData);
+            const participant = participants.find(p => p.name === emailToName(participantIdentifier));
+            
+            if (participant) {
+                seasonalData.push({
+                    season: season,
+                    ideas: participant.totalIdeas
+                });
+            }
+        }
+    });
+    
+    return seasonalData.sort((a, b) => {
+        const seasonAId = getSeasonID(a.season);
+        const seasonBId = getSeasonID(b.season);
+        return seasonAId - seasonBId;
+    });
+}
+
+// Render seasonal breakdown chart
+function renderSeasonalBreakdownChart(seasonalData) {
+    const ctx = document.getElementById('seasonalBreakdownChart').getContext('2d');
+    
+    if (charts.seasonalBreakdown) {
+        charts.seasonalBreakdown.destroy();
+    }
+    
+    charts.seasonalBreakdown = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: seasonalData.map(s => s.season),
+            datasets: [{
+                label: 'الأفكار',
+                data: seasonalData.map(s => s.ideas),
+                backgroundColor: CHART_BACKGROUND_COLOR,
+                borderColor: CHART_BORDER_COLOR,
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            family: 'Cairo',
+                            size: 14
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: -5,
+                    font: {
+                        family: 'Cairo',
+                        size: 11,
+                        weight: 'bold'
+                    },
+                    formatter: (value) => Math.round(value)
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            family: 'Cairo'
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            family: 'Cairo',
+                            size: 11
+                        },
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
 }
 
 let pub_currentResultsParticipants;

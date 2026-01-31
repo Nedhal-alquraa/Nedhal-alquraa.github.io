@@ -12,7 +12,7 @@
         <div class="container">
             <img src="nedhal_logo.jpg" alt="Nedhal Logo" width="80" id="nedhalIcon" style="border-radius: 50%; margin-bottom: 1rem;">
             <h1>نضال القراء</h1>
-            <p>تتبع تقدمك في القراءة وتحدي نفسك</p>
+            <p>تتبع تقدمك في القراءة وتحدى نفسك</p>
         </div>
     </div>
 
@@ -51,14 +51,14 @@
         <div class="container">
             <!-- Current Results Page -->
             <div id="currentResults" class="page active">
-                <!-- Toggle Buttons -->
+                <!-- Toggle Switch -->
                 <div class="view-toggle">
-                    <button id="totalViewBtn" class="view-toggle-btn active" onclick="toggleResultsView('total')">
-                        <i class="fas fa-chart-bar"></i> النتائج الإجمالية
-                    </button>
-                    <button id="individualViewBtn" class="view-toggle-btn" onclick="toggleResultsView('individual')">
-                        <i class="fas fa-user"></i> النتائج الفردية
-                    </button>
+                    <span class="toggle-label">النتائج الفردية</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="currentResultsToggle" onchange="toggleResultsView(this.checked ? 'individual' : 'total')">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">النتائج الجماعية</span>
                 </div>
 
                 <!-- Total Results View (Original) -->
@@ -159,14 +159,14 @@
 
             <!-- Overall Results Page -->
             <div id="overall" class="page">
-                <!-- Toggle Buttons -->
+                <!-- Toggle Switch -->
                 <div class="view-toggle">
-                    <button id="overallTotalViewBtn" class="view-toggle-btn active" onclick="toggleOverallResultsView('total')">
-                        <i class="fas fa-chart-bar"></i> النتائج الإجمالية
-                    </button>
-                    <button id="overallIndividualViewBtn" class="view-toggle-btn" onclick="toggleOverallResultsView('individual')">
-                        <i class="fas fa-user"></i> النتائج الفردية
-                    </button>
+                    <span class="toggle-label">النتائج الفردية</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="overallResultsToggle" onchange="toggleOverallResultsView(this.checked ? 'individual' : 'total')">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">النتائج الجماعية</span>
                 </div>
 
                 <!-- Total Results View -->
