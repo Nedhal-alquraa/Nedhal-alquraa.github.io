@@ -96,12 +96,14 @@ function showPage(pageId) {
     event.target.classList.add('active');
 }
 
+
+let pub_currentResultsParticipants;
 // Update current results
 function updateCurrentResults() {
+    // OPTIMIZE: reduce parseDate, prefilter
     const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
     const participants = getParticipantsStats(seasonData);
-    
-    // console.log("Malaki", participants);
+    pub_currentResultsParticipants = participants;
 
     // Ideas Chart
     updateIdeasChart(participants);
@@ -452,6 +454,7 @@ function updateseasonsComparisonStats() {
 
     // Updating the table
     const tbody = document.getElementById('seasonsTableBody');
+    tbody.innerHTML = "";
     seasonStats.forEach((season, index) => {
         const row = tbody.insertRow();
         row.innerHTML = `
