@@ -24,6 +24,10 @@ let adminWarnings = [];
 let currentResultsViewMode = 'total'; // 'total' or 'individual'
 let selectedParticipantEmail = null;
 
+// Cache for participants stats to avoid recalculation
+let cachedCurrentSeasonParticipants = null;
+let cachedAllParticipants = null;
+
 const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbyS7Gc6LUC6XuI5wKSrTviq88wU38JpJFZ2uixtkClbx0zuS6cl8GG0uLQ_Jh3dh3_tfA';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
 
@@ -62,7 +66,13 @@ async function loadData() {
         // Checking data
         checkData();
 
+        // Precalculate and cache participants stats
+        const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
+        cachedCurrentSeasonParticipants = getParticipantsStats(seasonData);
+        cachedAllParticipants = getParticipantsStats(allData);
+
         updateCurrentResults();
+        updateOverallResults();
         updateCountdown();
         updateExpelled();
         updateRecords();
@@ -131,9 +141,7 @@ function toggleResultsView(mode) {
 // Render individual results participant selector
 function renderIndividualResultsSelector() {
     const container = document.getElementById('individualResultsView');
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
-    const sortedParticipants = participants.sort((a, b) => a.name.localeCompare(b.name));
+    const sortedParticipants = [...cachedCurrentSeasonParticipants].sort((a, b) => a.name.localeCompare(b.name));
     
     container.innerHTML = `
         <div class="card">
@@ -154,7 +162,7 @@ function renderIndividualResultsSelector() {
     document.getElementById('participantSelector').addEventListener('change', function(e) {
         const participantName = e.target.value;
         if (participantName) {
-            displayIndividualResults(participantName);
+            displayIndividualResults(participantName, cachedCurrentSeasonParticipants);
         } else {
             document.getElementById('participantDetails').innerHTML = '';
         }
@@ -162,9 +170,7 @@ function renderIndividualResultsSelector() {
 }
 
 // Display individual results for selected participant
-function displayIndividualResults(participantName) {
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
+function displayIndividualResults(participantName, participants) {
     const participant = participants.find(p => p.name === participantName);
     
     if (!participant) return;
@@ -176,7 +182,7 @@ function displayIndividualResults(participantName) {
     const today = new Date();
     
     let daysWithoutReading = 0;
-    for (let d = new Date(seasonStart); d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(protectedEndDate); d <= today; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
         const minutesRead = participant.dailyMinutes[dateStr] || 0;
         if (minutesRead < 3) {
@@ -190,7 +196,8 @@ function displayIndividualResults(participantName) {
     
     // Calculate invoice components
     const readingIdeas = participant.totalIdeas + participant.subtraction - participant.extraIdeas;
-    const readingIdeasBeforeFactor = readingIdeas / (participant.maxStreak >= 3 ? 1.2 : participant.maxStreak >= 2 ? 1.15 : 1);
+    const streakFactor = participant.maxStreak >= 3 ? 1.2 : participant.maxStreak >= 2 ? 1.15 : 1;
+    const readingIdeasBeforeFactor = readingIdeas / streakFactor;
     
     const detailsContainer = document.getElementById('participantDetails');
     detailsContainer.innerHTML = `
@@ -232,7 +239,7 @@ function displayIndividualResults(participantName) {
                     </div>
                     <div class="invoice-row">
                         <span class="invoice-label">عامل الاستمرارية</span>
-                        <span class="invoice-value">×${participant.maxStreak >= 3 ? '1.20' : participant.maxStreak >= 2 ? '1.15' : '1.00'}</span>
+                        <span class="invoice-value">×${streakFactor.toFixed(2)}</span>
                     </div>
                     <div class="invoice-row invoice-total">
                         <span class="invoice-label"><strong>الإجمالي النهائي</strong></span>
@@ -334,19 +341,287 @@ function getHeatmapColor(ideas) {
     return HEATMAP_COLORS.LEVEL_5;
 }
 
+// ========== OVERALL RESULTS ==========
+
+// Track current view mode in Overall Results tab
+let overallResultsViewMode = 'total'; // 'total' or 'individual'
+
+// Toggle between total and individual overall results views
+function toggleOverallResultsView(mode) {
+    overallResultsViewMode = mode;
+    
+    // Update toggle button states
+    document.getElementById('overallTotalViewBtn').classList.toggle('active', mode === 'total');
+    document.getElementById('overallIndividualViewBtn').classList.toggle('active', mode === 'individual');
+    
+    // Show/hide appropriate sections
+    document.getElementById('overallTotalResultsView').style.display = mode === 'total' ? 'block' : 'none';
+    document.getElementById('overallIndividualResultsView').style.display = mode === 'individual' ? 'block' : 'none';
+    
+    if (mode === 'individual') {
+        renderOverallIndividualResultsSelector();
+    }
+}
+
+// Update overall results
+function updateOverallResults() {
+    // Ideas Chart
+    updateOverallIdeasChart(cachedAllParticipants);
+    
+    // Streak Chart  
+    updateOverallStreakChart(cachedAllParticipants);
+    
+    // If individual view is active, refresh it
+    if (overallResultsViewMode === 'individual') {
+        renderOverallIndividualResultsSelector();
+    }
+}
+
+// Update Overall Ideas Chart
+function updateOverallIdeasChart(participants) {
+    const ctx = document.getElementById('overallIdeasChart').getContext('2d');
+    const sortedParticipants = [...participants].sort((a, b) => b.totalIdeas - a.totalIdeas).filter(p => p.totalIdeas > 0);
+    
+    if (charts.overallIdeas) {
+        charts.overallIdeas.destroy();
+    }
+    
+    charts.overallIdeas = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedParticipants.map(p => p.name),
+            datasets: [{
+                label: 'إجمالي الأفكار',
+                data: sortedParticipants.map(p => p.totalIdeas),
+                backgroundColor: CHART_BACKGROUND_COLOR,
+                barPercentage: 1.0,
+                categoryPercentage: 0.7,
+                borderColor: CHART_BORDER_COLOR,
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            family: 'Cairo',
+                            size: 16
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    anchor: 'end',
+                    offset: 0,
+                    font: {
+                        family: 'Cairo',
+                        size: 12
+                    },
+                    formatter: (value) => Math.round(value)
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        display: true,
+                        autoSkip: false,
+                        font: {
+                            family: 'Cairo',
+                            size: 15
+                        }
+                    }
+                },
+                x: {
+                    type: 'logarithmic',
+                    ticks: {
+                        font: {
+                            family: 'Cairo'
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update Overall Streak Chart
+function updateOverallStreakChart(participants) {
+    const ctx = document.getElementById('overallStreakChart').getContext('2d');
+    const sortedParticipants = [...participants].sort((a, b) => b.maxStreak - a.maxStreak).filter(p => p.maxStreak > 0);
+    
+    if (charts.overallStreak) {
+        charts.overallStreak.destroy();
+    }
+    
+    charts.overallStreak = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sortedParticipants.map(p => p.name),
+            datasets: [{
+                label: 'الأيام المتتالية',
+                data: sortedParticipants.map(p => p.maxStreak),
+                backgroundColor: CHART_BACKGROUND_COLOR,
+                borderColor: CHART_BORDER_COLOR,
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            family: 'Cairo',
+                            size: 14
+                        }
+                    }
+                },
+                datalabels: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            family: 'Cairo'
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            family: 'Cairo'
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render overall individual results participant selector
+function renderOverallIndividualResultsSelector() {
+    const container = document.getElementById('overallIndividualResultsView');
+    const sortedParticipants = [...cachedAllParticipants].sort((a, b) => a.name.localeCompare(b.name));
+    
+    container.innerHTML = `
+        <div class="card">
+            <h2><i class="fas fa-user"></i> اختر اسمك</h2>
+            <div style="margin-bottom: 2rem;">
+                <select id="overallParticipantSelector" class="participant-selector">
+                    <option value="">-- اختر المشارك --</option>
+                    ${sortedParticipants.map(p => `
+                        <option value="${p.name}">${p.name}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div id="overallParticipantDetails"></div>
+        </div>
+    `;
+    
+    // Add event listener
+    document.getElementById('overallParticipantSelector').addEventListener('change', function(e) {
+        const participantName = e.target.value;
+        if (participantName) {
+            displayOverallIndividualResults(participantName, cachedAllParticipants);
+        } else {
+            document.getElementById('overallParticipantDetails').innerHTML = '';
+        }
+    });
+}
+
+// Display overall individual results for selected participant
+function displayOverallIndividualResults(participantName, participants) {
+    const participant = participants.find(p => p.name === participantName);
+    
+    if (!participant) return;
+    
+    // Calculate total statistics across all seasons
+    const totalReadingDays = Object.keys(participant.dailyMinutes).filter(date => participant.dailyMinutes[date] >= 3).length;
+    const avgReadingPerDay = totalReadingDays > 0 ? participant.totalMinutes / totalReadingDays : 0;
+    
+    // Calculate invoice components
+    const readingIdeas = participant.totalIdeas + participant.subtraction - participant.extraIdeas;
+    const streakFactor = participant.maxStreak >= 3 ? 1.2 : participant.maxStreak >= 2 ? 1.15 : 1;
+    const readingIdeasBeforeFactor = readingIdeas / streakFactor;
+    
+    const detailsContainer = document.getElementById('overallParticipantDetails');
+    detailsContainer.innerHTML = `
+        <div class="individual-results-container">
+            <!-- General Info -->
+            <div class="individual-info-section">
+                <h3 class="participant-name">${participantName}</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">إجمالي أيام القراءة</span>
+                        <span class="info-value success-text">${totalReadingDays}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">متوسط القراءة يومياً</span>
+                        <span class="info-value">${formatTime(Math.round(avgReadingPerDay))}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">أطول استمرارية</span>
+                        <span class="info-value">${participant.maxStreak} يوم</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Invoice -->
+            <div class="invoice-section">
+                <h3><i class="fas fa-file-invoice"></i> فاتورة الأفكار الإجمالية</h3>
+                <div class="invoice-table">
+                    <div class="invoice-row">
+                        <span class="invoice-label">أفكار القراءة (قبل عامل الاستمرارية)</span>
+                        <span class="invoice-value">${readingIdeasBeforeFactor.toFixed(2)}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">الأفكار الإضافية</span>
+                        <span class="invoice-value success-text">+${participant.extraIdeas.toFixed(2)}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">إجمالي الخصومات</span>
+                        <span class="invoice-value danger-text">-${participant.subtraction.toFixed(2)}</span>
+                    </div>
+                    <div class="invoice-row invoice-subtotal">
+                        <span class="invoice-label">المجموع الفرعي</span>
+                        <span class="invoice-value">${(readingIdeasBeforeFactor + participant.extraIdeas - participant.subtraction).toFixed(2)}</span>
+                    </div>
+                    <div class="invoice-row">
+                        <span class="invoice-label">عامل الاستمرارية</span>
+                        <span class="invoice-value">×${streakFactor.toFixed(2)}</span>
+                    </div>
+                    <div class="invoice-row invoice-total">
+                        <span class="invoice-label"><strong>الإجمالي النهائي</strong></span>
+                        <span class="invoice-value"><strong>${participant.totalIdeas.toFixed(2)}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 let pub_currentResultsParticipants;
 // Update current results
 function updateCurrentResults() {
-    // OPTIMIZE: reduce parseDate, prefilter
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
-    pub_currentResultsParticipants = participants;
+    pub_currentResultsParticipants = cachedCurrentSeasonParticipants;
 
     // Ideas Chart
-    updateIdeasChart(participants);
+    updateIdeasChart(cachedCurrentSeasonParticipants);
     
     // Streak Chart
-    updateStreakChart(participants);
+    updateStreakChart(cachedCurrentSeasonParticipants);
     
     // If individual view is active, refresh it
     if (currentResultsViewMode === 'individual') {
@@ -500,8 +775,7 @@ function updateStreakChart(participants) {
 
 // Update countdown table
 function updateCountdown() {
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
+    const participants = cachedCurrentSeasonParticipants;
     const tbody = document.getElementById('countdownBody');
     // console.log(participants);
     // Calculate days remaining for each participant
@@ -539,8 +813,7 @@ function updateCountdown() {
 
 // Update expelled participants
 function updateExpelled() {
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
+    const participants = cachedCurrentSeasonParticipants;
     const content = document.getElementById('expelledContent');
     const dayMs = 24*60*60*1000;
     // Find participants eligible for expulsion
@@ -588,12 +861,11 @@ function updateExpelled() {
 
 // Update records
 function updateRecords() {
-    const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-    const participants = getParticipantsStats(seasonData);
+    const participants = cachedCurrentSeasonParticipants;
     const grid = document.getElementById('recordsGrid');
     
     // Most consistent participants
-    const topStreak = participants
+    const topStreak = [...participants]
         .sort((a, b) => b.maxStreak - a.maxStreak)
         .slice(0, 3);
     
@@ -607,7 +879,7 @@ function updateRecords() {
     });
     topDuration = topDuration.sort((a, b) => b.minutes - a.minutes).slice(0, 3);
     console.log(topDuration);
-    const topIdeas = participants
+    const topIdeas = [...participants]
         .sort((a, b) => b.totalIdeas - a.totalIdeas)
         .slice(0, 3);
 
