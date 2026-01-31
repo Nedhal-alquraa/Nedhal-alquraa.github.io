@@ -1,0 +1,269 @@
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نضال القراء</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="shortcut icon" href="nedhal_logo.jpg">
+
+    <style>
+        @media print {
+            .nav, .header { display: none !important; }
+            .page:not(.active) { display: block !important; }
+            .card { break-inside: avoid; margin-bottom: 1rem; }
+            .chart-container { height: 300px !important; }
+            body { background: white !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1><i id="nedhalIcon" class="fas fa-book-open"></i> نضال القراء </h1>
+            <p> القراءة اليومية </p>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <button class="nav-btn active" onclick="showPage('current')" role="tab" tabindex="0">
+                    <i class="fas fa-chart-bar"></i> النتائج الحالية
+                </button>
+                <button class="nav-btn" onclick="showPage('countdown')" role="tab" tabindex="-1">
+                    <i class="fas fa-clock"></i> عدادات الطرد
+                </button>
+                <button class="nav-btn" onclick="showPage('expelled')" role="tab" tabindex="-1">
+                    <i class="fas fa-exclamation-triangle"></i> المستحقون للطرد
+                </button>
+                <button class="nav-btn" onclick="showPage('records')" role="tab" tabindex="-1">
+                    <i class="fas fa-trophy"></i> الأرقام القياسية
+                </button>
+                <button class="nav-btn" onclick="showPage('seasonsComparison')" role="tab" tabindex="-1">
+                    <i class="fas fa-chart-line"></i> مقارنة المواسم
+                </button>
+                <button class="nav-btn" onclick="showPage('overall')" role="tab" tabindex="-1">
+                    <i class="fas fa-chart-line"></i> النتائج الإجمالية
+                </button>
+                <button class="nav-btn admin-only" onclick="showPage('admin')" role="tab" tabindex="-1">
+                    <i class="fas fa-chart-line"></i> الإدارة
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Current Results Page -->
+            <div id="current" class="page active">
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> ترتيب قراء الموسم الحالي</h2>
+                    <div class="chart-container">
+                        <canvas id="ideasChart" style="box-sizing: border-box; display: block; min-height: 400px; width: 0px;"></canvas>
+                    </div>
+                    <div class="mobile-leaderboard" id="ideasChartMobile"></div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-fire"></i> ترتيب استمرارية القراء للموسم الحالي</h2>
+                    <div class="chart-container">
+                        <canvas id="streakChart" style="box-sizing: border-box; display: block; min-height: 400px; width: 0px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Countdown Page -->
+            <div id="countdown" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-clock"></i> عدادات الطرد</h2>
+                    <div class="table-container">
+                        <table id="countdownTable">
+                            <thead>
+                                <tr>
+                                    <th>اسم المشارك</th>
+                                    <th>الأيام المتبقية</th>
+                                    <th>الحالة</th>
+                                    <th>الأفكار الحالية</th>
+                                </tr>
+                            </thead>
+                            <tbody id="countdownBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expelled Page -->
+            <div id="expelled" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-exclamation-triangle"></i> المستحقون للطرد</h2>
+                    <div id="expelledContent">
+                    <div style="text-align: center; padding: 2rem; color: var(--success);">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>لا يوجد مشاركون مستحقون للطرد حالياً</h3>
+                        <p>جميع المشاركين يحافظون على مستوى جيد من القراءة!</p>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Records Page -->
+            <div id="records" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-trophy"></i> الأرقام القياسية - الموسم الحالي</h2>
+                    <div class="records-grid" id="recordsGrid">
+                <div class="record-card">
+                    <h3><i class="fas fa-star"></i> أكثر قراءة في يوم واحد</h3>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-1">1</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-2">2</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-3">3</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                </div>
+                
+                <div class="record-card">
+                    <h3><i class="fas fa-fire"></i> أكثر استمرارية</h3>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-1">1</span> ...</span>
+                            <span>... يوم متتالي</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-2">2</span> ...</span>
+                            <span>... يوم متتالي</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-3">3</span> ...</span>
+                            <span>... يوم متتالي</span>
+                        </div>
+                    
+                </div>
+                
+                <div class="record-card">
+                    <h3><i class="fas fa-trophy"></i> أعلى إجمالي أفكار</h3>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-1">1</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-2">2</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                        <div class="record-item">
+                            <span><span class="rank-badge rank-3">3</span> ...</span>
+                            <span>... فكرة</span>
+                        </div>
+                    
+                </div>
+            </div>
+                </div>
+            </div>
+
+            <!-- seasonsComparison Results Page -->
+            <div id="seasonsComparison" class="page">
+                <div class="stats-grid" id="seasonsComparisonStats">
+                <div class="stat-card">
+                    <h3>...</h3>
+                    <p>إجمالي المشاركين</p>
+                </div>
+                <div class="stat-card">
+                    <h3>...</h3>
+                    <p>إجمالي الأفكار المحققة</p>
+                </div>
+                <div class="stat-card">
+                    <h3>...</h3>
+                    <p>متوسط الأفكار لكل مشارك</p>
+                </div>
+                <div class="stat-card">
+                    <h3>...</h3>
+                    <p>عدد المواسم</p>
+                </div>
+            </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> مقارنة المواسم</h2>
+                    <div class="chart-container">
+                        <canvas id="seasonsChart" style="box-sizing: border-box; display: block; height: 0px; width: 0px;" width="0" height="0"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> مقارنة المواسم</h2>
+                    <div class="table-container">
+                        <table id="seasonsTable">
+                            <thead>
+                                <tr>
+                                    <th>اسم الموسم</th>
+                                    <th>عدد المشاركين</th>
+                                    <th>عدد المنسحبين</th>
+                                </tr>
+                            </thead>
+                            <tbody id="seasonsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overall Results Page -->
+            <div id="overall" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> ترتيب المشاركين حسب إجمالي الأفكار</h2>
+                    <div class="chart-container">
+                        <canvas id="overall_ideasChart" style="box-sizing: border-box; display: block; min-height: 400px; width: 200px;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2><i class="fas fa-fire"></i> ترتيب المشاركين حسب الأيام المتتالية</h2>
+                    <div class="chart-container">
+                        <canvas id="overall_streakChart" style="box-sizing: border-box; display: block; height: 400px; width: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin" class="page">
+                <div class="card">
+                    <h2><i class="fas fa-exclamation-triangle"></i> التحذيرات</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>الاسم</th>
+                                    <th>المدة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminWarnings"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="names.js"></script>
+    <script src="helper.js"></script>
+    <script src="design.js"></script>
+
+
+</body>
+</html>
