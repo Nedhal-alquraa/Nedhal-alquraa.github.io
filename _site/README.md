@@ -37,6 +37,18 @@ At file `names.js` there is a mapping between the email and the name.
 
 The website is simple, static, with a little calculations and data maniplulation.
 
+Some helper functions of Hijri/Gregorian calender formats and conversion and seasons are defiend in `helper.js`.
+
+The important information about each season dates:
+- Minimum of 4 weeks (28 days), could be longer until the next seasons saturday
+- Each season takes the majority of a whole hijri month
+- The first day of the season is always the first Saturday of that Hijri month
+
+Some definitions:
+- Season ID: a unique integer for each season starting from 1
+- Season Name: a unique name for each season which is "{HIJRI_MONTH_NAME} {HIJRI_YEAR_NUM}"
+- Protected week: the first week of season there are no deductions 
+
 ## Files
 - `helper.js`: Contains main functionality and calculations for: dates, seasons, ideas, streaks, and also for cookies management
 - `design.js`: Contains API functionality along with colors, graphs, direct HTML update

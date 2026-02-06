@@ -40,7 +40,7 @@ function hijriToGregorian(hYear, hMonth, hDay) {
     };
 
     let low = new Date('2023-01-01T00:00:00.000Z');
-    let high = new Date('2030-01-01T00:00:00.000Z');
+    let high = new Date('2027-01-01T00:00:00.000Z');
     
     while (low <= high) {
         const mid = new Date(low.getTime() + Math.floor((high.getTime() - low.getTime()) / 2));
@@ -178,7 +178,7 @@ function getSeasonID(season_name) {
 }
 
 function nameBySeasonID(season_id) {
-    return `${HIJRI_TO_MONTHS[1+(season_id-1)%12]} ${1446+Math.floor(season_id/12)}`;
+    return `${HIJRI_TO_MONTHS[1+(season_id-1)%12]} ${1446+Math.floor((season_id-1)/12)}`;
 }
 
 function getSeasonStartDate(season_name) {
@@ -216,6 +216,14 @@ function getSeasonFromDate(date = new Date()) {
         } else hijri.month -= 1;
     }
     return `${HIJRI_TO_MONTHS[hijri.month]} ${hijri.year}`;
+}
+
+function getAllSeasons() {
+    let seasons = [];
+    for (let i = 1; i <= getSeasonID(currentSeason); i++) {
+        seasons.push(nameBySeasonID(i));
+    }
+    return seasons;
 }
 
 // Get current season

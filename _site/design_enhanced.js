@@ -1031,7 +1031,7 @@ function updateRecords() {
 
 // Update seasonsComparison statistics
 function updateseasonsComparisonStats() {
-    const seasons = [...new Set(allData.map(d => getSeasonFromDate(parseDate(d.timestamp))))];
+    const seasons = getAllSeasons();
     const participants = [...new Set(allData.map(d => emailToName(d.email)))];
     const participantsStats = getParticipantsStats(allData);
     const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
