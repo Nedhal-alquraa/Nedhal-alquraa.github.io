@@ -200,6 +200,7 @@ input:checked + .toggle-slider:before {
     gap: 1.5rem;
     max-width: 1000px;
     margin: 0 auto;
+    max-width: 100%;
 }
 
 /* Individual Info Section */
@@ -209,6 +210,7 @@ input:checked + .toggle-slider:before {
     border-radius: 15px;
     color: white;
     text-align: center;
+    max-width: 80%;
 }
 
 .participant-name {
@@ -731,7 +733,7 @@ tr:hover {
     .chart-container {
         height: 350px;
         min-height: 300px;
-        max-height: 500px;
+        max-height: 1100px;
     }
     
     .seasonal-chart-container {
@@ -889,9 +891,10 @@ tr:hover {
     animation: spinner 2s infinite;
 }
 
-#overallIdeasChart {
+#overallTotalResultsView > .card > .chart-container {
     min-height: 1100px !important;
 }
+/*
 #overallTotalResultsView {
     min-height: 1100px !important;
-}
+} */
