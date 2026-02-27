@@ -24,6 +24,10 @@ let adminWarnings = [];
 let currentResultsViewMode = 'total'; // 'total' or 'individual'
 let selectedParticipantEmail = null;
 
+// Track metric mode for charts: 'ideas' or 'minutes'
+let currentMetricMode = 'ideas';
+let overallMetricMode = 'ideas';
+
 // Cache for participants stats to avoid recalculation
 let cachedCurrentSeasonParticipants = null;
 let cachedAllParticipants = null;
@@ -46,8 +50,57 @@ async function loadRawResponses() {
     }
 }
 
+// Night mode functions
+function initNightMode() {
+    const saved = localStorage.getItem('nightMode');
+    if (saved === 'true') {
+        document.body.classList.add('night-mode');
+        updateNightModeIcon();
+    }
+}
+
+function toggleNightMode() {
+    document.body.classList.toggle('night-mode');
+    const isNight = document.body.classList.contains('night-mode');
+    localStorage.setItem('nightMode', isNight);
+    updateNightModeIcon();
+    
+    // Update Chart.js defaults for night mode
+    updateChartsForTheme();
+}
+
+function updateNightModeIcon() {
+    const btn = document.getElementById('nightModeBtn');
+    if (!btn) return;
+    const isNight = document.body.classList.contains('night-mode');
+    btn.innerHTML = isNight ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+}
+
+function updateChartsForTheme() {
+    const isNight = document.body.classList.contains('night-mode');
+    const textColor = isNight ? '#a0aec0' : '#2d3748';
+    const gridColor = isNight ? '#2d3748' : '#e2e8f0';
+    
+    // Re-render charts if data is loaded
+    if (cachedCurrentSeasonParticipants) {
+        updateCurrentResults();
+    }
+    if (cachedAllParticipants) {
+        updateOverallResults();
+    }
+}
+
+function getChartTextColor() {
+    return document.body.classList.contains('night-mode') ? '#a0aec0' : '#2d3748';
+}
+
+function getChartGridColor() {
+    return document.body.classList.contains('night-mode') ? '#2d3748' : '#e2e8f0';
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    initNightMode();
     loadData();
     setInterval(loadData, 5 * 60 * 1000); // Update every 5 minutes
 });
@@ -137,6 +190,30 @@ function toggleResultsView(mode) {
     
     if (mode === 'individual') {
         renderIndividualResultsSelector();
+    }
+}
+
+// Toggle metric mode for current results charts
+function toggleCurrentMetric(mode) {
+    currentMetricMode = mode;
+    const checkbox = document.getElementById('currentMetricToggle');
+    if (checkbox) {
+        checkbox.checked = mode === 'minutes';
+    }
+    if (cachedCurrentSeasonParticipants) {
+        updateIdeasChart(cachedCurrentSeasonParticipants);
+    }
+}
+
+// Toggle metric mode for overall results charts
+function toggleOverallMetric(mode) {
+    overallMetricMode = mode;
+    const checkbox = document.getElementById('overallMetricToggle');
+    if (checkbox) {
+        checkbox.checked = mode === 'minutes';
+    }
+    if (cachedAllParticipants) {
+        updateOverallIdeasChart(cachedAllParticipants);
     }
 }
 
@@ -380,19 +457,24 @@ function updateOverallResults() {
 // Update Overall Ideas Chart
 function updateOverallIdeasChart(participants) {
     const ctx = document.getElementById('overallIdeasChart').getContext('2d');
-    const sortedParticipants = [...participants].sort((a, b) => b.totalIdeas - a.totalIdeas).filter(p => p.totalIdeas > 0);
+    const isMinutes = overallMetricMode === 'minutes';
+    const sortedParticipants = [...participants].sort((a, b) => {
+        return isMinutes ? b.totalMinutes - a.totalMinutes : b.totalIdeas - a.totalIdeas;
+    }).filter(p => isMinutes ? p.totalMinutes > 0 : p.totalIdeas > 0);
     
     if (charts.overallIdeas) {
         charts.overallIdeas.destroy();
     }
+    
+    const textColor = getChartTextColor();
     
     charts.overallIdeas = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: sortedParticipants.map(p => p.name),
             datasets: [{
-                label: 'إجمالي الأفكار',
-                data: sortedParticipants.map(p => p.totalIdeas),
+                label: isMinutes ? 'إجمالي الدقائق' : 'إجمالي الأفكار',
+                data: sortedParticipants.map(p => isMinutes ? p.totalMinutes : p.totalIdeas),
                 backgroundColor: CHART_BACKGROUND_COLOR,
                 barPercentage: 1.0,
                 categoryPercentage: 0.7,
@@ -408,6 +490,7 @@ function updateOverallIdeasChart(participants) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 16
@@ -431,19 +514,23 @@ function updateOverallIdeasChart(participants) {
                     ticks: {
                         display: true,
                         autoSkip: false,
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 15
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 },
                 x: {
                     type: 'logarithmic',
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }
@@ -458,6 +545,8 @@ function updateOverallStreakChart(participants) {
     if (charts.overallStreak) {
         charts.overallStreak.destroy();
     }
+    
+    const textColor = getChartTextColor();
     
     charts.overallStreak = new Chart(ctx, {
         type: 'bar',
@@ -479,6 +568,7 @@ function updateOverallStreakChart(participants) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 14
@@ -493,17 +583,21 @@ function updateOverallStreakChart(participants) {
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 },
                 x: {
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }
@@ -663,6 +757,8 @@ function renderSeasonalBreakdownChart(seasonalData) {
         charts.seasonalBreakdown.destroy();
     }
     
+    const textColor = getChartTextColor();
+    
     charts.seasonalBreakdown = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -682,6 +778,7 @@ function renderSeasonalBreakdownChart(seasonalData) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 14
@@ -705,20 +802,24 @@ function renderSeasonalBreakdownChart(seasonalData) {
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 },
                 x: {
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 11
                         },
                         maxRotation: 45,
                         minRotation: 45
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }
@@ -745,7 +846,10 @@ function updateCurrentResults() {
 // Update Ideas Chart
 function updateIdeasChart(participants) {
     const ctx = document.getElementById('ideasChart').getContext('2d');
-    const sortedParticipants = participants.sort((a, b) => b.totalIdeas - a.totalIdeas).filter(p => p.totalIdeas > 0);
+    const isMinutes = currentMetricMode === 'minutes';
+    const sortedParticipants = [...participants].sort((a, b) => {
+        return isMinutes ? b.totalMinutes - a.totalMinutes : b.totalIdeas - a.totalIdeas;
+    }).filter(p => isMinutes ? p.totalMinutes > 0 : p.totalIdeas > 0);
     
     if (charts.ideas) {
         charts.ideas.destroy();
@@ -753,17 +857,18 @@ function updateIdeasChart(participants) {
     // Register the plugin
     Chart.register(ChartDataLabels);
 
+    const textColor = getChartTextColor();
+
     charts.ideas = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: sortedParticipants.map(p => p.name),
             datasets: [{
-                label: 'إجمالي الأفكار',
-                data: sortedParticipants.map(p => p.totalIdeas),
+                label: isMinutes ? 'إجمالي الدقائق' : 'إجمالي الأفكار',
+                data: sortedParticipants.map(p => isMinutes ? p.totalMinutes : p.totalIdeas),
                 backgroundColor: CHART_BACKGROUND_COLOR,
-                // barThickness: 30,    
-                barPercentage: 1.0, // Increase bar width (0.8 means 80% of the allocated space per bar)
-                categoryPercentage: 0.7, // Reduce to increase spacing between bars (70% of the category width)
+                barPercentage: 1.0,
+                categoryPercentage: 0.7,
                 borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
@@ -776,6 +881,7 @@ function updateIdeasChart(participants) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 16
@@ -784,39 +890,38 @@ function updateIdeasChart(participants) {
                 },
                 datalabels: {
                     color: '#ffffff',
-                    anchor: 'end', // Position labels at the end of the bars
-                    // align: 'end', // Align labels outside the bars
-                    offset: 0, // Distance from the end of the bar
+                    anchor: 'end',
+                    offset: 0,
                     font: {
                         family: 'Cairo',
                         size: 12
                     },
-                    formatter: (value) => Math.round(value) // Display the raw value
+                    formatter: (value) => Math.round(value)
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    // barThickness: 30,
-                    // barPercentage: 1.0, // Increase bar width (0.8 means 80% of the allocated space per bar)
-                    // categoryPercentage: 0.1, // Reduce to increase spacing between bars (70% of the category width)
                     ticks: {
                         display: true,
                         autoSkip: false,
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 15
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 },
                 x: {
-                    // barThickness: 30,
-                    type: 'logarithmic', // Note: Logarithmic scale may affect label positioning
+                    type: 'logarithmic',
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }
@@ -831,6 +936,8 @@ function updateStreakChart(participants) {
     if (charts.streak) {
         charts.streak.destroy();
     }
+    
+    const textColor = getChartTextColor();
     
     charts.streak = new Chart(ctx, {
         type: 'bar',
@@ -852,6 +959,7 @@ function updateStreakChart(participants) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 14
@@ -866,20 +974,21 @@ function updateStreakChart(participants) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        font: {
-                            family: 'Cairo'
-                        },
-                        // stepSize: 1,
-                        // beginAtZero: true,
-                        // precision: 0
-                    }
-                },
-                x: {
-                    ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
+                },
+                x: {
+                    ticks: {
+                        color: textColor,
+                        font: {
+                            family: 'Cairo'
+                        }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }
@@ -890,7 +999,6 @@ function updateStreakChart(participants) {
 function updateCountdown() {
     const participants = cachedCurrentSeasonParticipants;
     const tbody = document.getElementById('countdownBody');
-    // console.log(participants);
     // Calculate days remaining for each participant
     let endOfProtectedWeekThisSeason = getSeasonStartDate(currentSeason);
     endOfProtectedWeekThisSeason.setDate(endOfProtectedWeekThisSeason.getDate() + 7);
@@ -1098,6 +1206,9 @@ function updateSeasonsChart(seasonStats) {
     if (charts.seasons) {
         charts.seasons.destroy();
     }
+    
+    const textColor = getChartTextColor();
+    
     charts.seasons = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -1110,14 +1221,6 @@ function updateSeasonsChart(seasonStats) {
                     borderColor: CHART_BORDER_COLOR2,
                     borderWidth: 2
                 }
-                // ,
-                // {
-                //     label: 'إجمالي الأفكار',
-                //     data: seasonStats.map(s => s.totalIdeas),
-                //     backgroundColor: 'rgba(112, 33, 141, 0.8)',
-                //     borderColor: 'rgba(124, 31, 113, 1)',
-                //     borderWidth: 2
-                // }
             ]
         },
         options: {
@@ -1131,6 +1234,7 @@ function updateSeasonsChart(seasonStats) {
             plugins: {
                 legend: {
                     labels: {
+                        color: textColor,
                         font: {
                             family: 'Cairo',
                             size: 14
@@ -1144,19 +1248,23 @@ function updateSeasonsChart(seasonStats) {
             scales: {
                 x: {
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 },
                 y: {
                     display: true,
                     position: 'right',
                     ticks: {
+                        color: textColor,
                         font: {
                             family: 'Cairo'
                         }
-                    }
+                    },
+                    grid: { color: getChartGridColor() }
                 }
             }
         }

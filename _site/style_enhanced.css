@@ -13,6 +13,32 @@
     --danger: #f56565;
     --border: #e2e8f0;
     --shadow: 0 4px 20px rgba(104, 121, 227, 0.1);
+    --nav-bg: white;
+    --table-hover: #f7fafc;
+    --table-header: var(--primary-color);
+    --input-bg: white;
+    --toggle-track: var(--primary-color);
+    --record-card-bg: var(--primary-color);
+    --invoice-bg: #f8fafc;
+    --info-overlay: rgba(255, 255, 255, 0.15);
+}
+
+/* Night Mode Variables */
+body.night-mode {
+    --background: #0f1729;
+    --card-bg: #1a2332;
+    --text-primary: #e2e8f0;
+    --text-secondary: #a0aec0;
+    --border: #2d3748;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --nav-bg: #1a2332;
+    --table-hover: #1e2d3d;
+    --table-header: #1e2d3d;
+    --input-bg: #1e2d3d;
+    --toggle-track: #4a5568;
+    --record-card-bg: #1e2d3d;
+    --invoice-bg: #1e2d3d;
+    --info-overlay: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -27,6 +53,7 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     direction: rtl;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -58,11 +85,12 @@ body {
 
 /* Navigation */
 .nav {
-    background: var(--card-bg);
+    background: var(--nav-bg);
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background 0.3s ease;
 }
 
 .nav-container {
@@ -86,6 +114,11 @@ body {
     font-size: 0.9rem;
 }
 
+body.night-mode .nav-btn {
+    border-color: var(--secondary-color);
+    color: var(--text-primary);
+}
+
 .nav-btn:hover, .nav-btn.active {
     background: var(--primary-gradient);
     border: white;
@@ -100,6 +133,49 @@ button[disabled], button[disabled]:hover{
   transform: none !important;
   color: #666666 !important;
   box-shadow: none !important;
+}
+
+/* Night Mode Toggle Button */
+.night-mode-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-gradient);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.night-mode-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+body.night-mode .night-mode-btn {
+    background: linear-gradient(-135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+/* Metric Switch (Minutes/Ideas toggle) */
+.metric-switch {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.metric-switch .toggle-label {
+    font-size: 0.9rem;
 }
 
 /* Toggle Switch for Current Results View */
@@ -139,7 +215,7 @@ button[disabled], button[disabled]:hover{
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--primary-color);
+    background: var(--toggle-track);
     transition: 0.3s;
     border-radius: 30px;
 }
@@ -182,7 +258,8 @@ input:checked + .toggle-slider:before {
     font-family: 'Cairo', sans-serif;
     border: 2px solid var(--border);
     border-radius: 12px;
-    background: white;
+    background: var(--input-bg);
+    color: var(--text-primary);
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -195,12 +272,10 @@ input:checked + .toggle-slider:before {
 
 /* Individual Results Container */
 .individual-results-container {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
-    max-width: 1000px;
-    margin: 0 auto;
-    max-width: 100%;
+    width: 100%;
 }
 
 /* Individual Info Section */
@@ -210,7 +285,8 @@ input:checked + .toggle-slider:before {
     border-radius: 15px;
     color: white;
     text-align: center;
-    max-width: 80%;
+    width: 100%;
+    overflow: hidden;
 }
 
 .participant-name {
@@ -222,13 +298,14 @@ input:checked + .toggle-slider:before {
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     margin-top: 1rem;
 }
 
 .info-item {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--info-overlay);
     padding: 1rem;
     border-radius: 12px;
     backdrop-filter: blur(10px);
@@ -257,10 +334,13 @@ input:checked + .toggle-slider:before {
 
 /* Invoice Section */
 .invoice-section {
-    background: white;
+    background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 15px;
     box-shadow: var(--shadow);
+    width: 100%;
+    overflow: hidden;
+    transition: background 0.3s ease;
 }
 
 .invoice-section h3 {
@@ -273,11 +353,16 @@ input:checked + .toggle-slider:before {
     gap: 0.5rem;
 }
 
+body.night-mode .invoice-section h3 {
+    color: var(--text-primary);
+}
+
 .invoice-table {
-    background: #f8fafc;
+    background: var(--invoice-bg);
     border-radius: 12px;
     padding: 1rem;
     border: 2px solid var(--border);
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .invoice-row {
@@ -305,10 +390,11 @@ input:checked + .toggle-slider:before {
 
 /* Compact Invoice Styles */
 .invoice-table-compact {
-    background: #f8fafc;
+    background: var(--invoice-bg);
     border-radius: 12px;
     padding: 0.75rem;
     border: 2px solid var(--border);
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .invoice-row-compact {
@@ -376,10 +462,13 @@ input:checked + .toggle-slider:before {
 
 /* Calendar Section */
 .calendar-section {
-    background: white;
+    background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 15px;
     box-shadow: var(--shadow);
+    width: 100%;
+    overflow: hidden;
+    transition: background 0.3s ease;
 }
 
 .calendar-section h3 {
@@ -390,6 +479,10 @@ input:checked + .toggle-slider:before {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+body.night-mode .calendar-section h3 {
+    color: var(--text-primary);
 }
 
 /* Calendar Heatmap */
@@ -462,6 +555,10 @@ input:checked + .toggle-slider:before {
     font-size: 0.8rem;
 }
 
+body.night-mode .cell-ideas {
+    color: #a78bfa;
+}
+
 .cell-minutes {
     font-size: 0.65rem;
     color: var(--text-secondary);
@@ -512,6 +609,10 @@ input:checked + .toggle-slider:before {
     margin-bottom: 2rem;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .card h2 {
@@ -524,8 +625,13 @@ input:checked + .toggle-slider:before {
     gap: 0.5rem;
 }
 
+body.night-mode .card h2 {
+    color: var(--text-primary);
+}
+
 /* Stats Grid */
 .stats-grid {
+    width: 100%; max-width: 100%;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
@@ -568,22 +674,24 @@ table {
     width: 100%;
     border-collapse: collapse;
     background: var(--card-bg);
+    transition: background 0.3s ease;
 }
 
 th, td {
     padding: 1rem;
     text-align: center;
     border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
 }
 
 th {
-    background: var(--primary-color);
+    background: var(--table-header);
     color: white;
     font-weight: 600;
 }
 
 tr:hover {
-    background: #f7fafc;
+    background: var(--table-hover);
 }
 
 .rank-badge {
@@ -673,16 +781,18 @@ tr:hover {
 /* Records Section */
 .records-grid {
     display: grid;
+    width: 100%; max-width: 100%;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
 }
 
 .record-card {
-    background: var(--primary-color);
+    background: var(--record-card-bg);
     color: white;
     padding: 1.5rem;
     border-radius: 12px;
     text-align: center;
+    transition: background 0.3s ease;
 }
 
 .record-card h3 {
@@ -726,6 +836,7 @@ tr:hover {
     }
     
     .stats-grid {
+        width: 100%; max-width: 100%;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1rem;
     }
@@ -747,6 +858,7 @@ tr:hover {
     .info-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
+        width: 100%;
     }
     
     .info-item {
@@ -848,6 +960,14 @@ tr:hover {
         font-size: 1rem;
         padding: 0.75rem;
     }
+    
+    .night-mode-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+        bottom: 15px;
+        left: 15px;
+    }
 }
 
 /* Status Indicators */
@@ -874,6 +994,21 @@ tr:hover {
     color: #c53030;
 }
 
+body.night-mode .status-safe {
+    background: rgba(72, 187, 120, 0.2);
+    color: #68d391;
+}
+
+body.night-mode .status-warning {
+    background: rgba(237, 137, 54, 0.2);
+    color: #f6ad55;
+}
+
+body.night-mode .status-danger {
+    background: rgba(245, 101, 101, 0.2);
+    color: #fc8181;
+}
+
 .admin-only {
     display: none !important;
 }
@@ -894,7 +1029,3 @@ tr:hover {
 #overallTotalResultsView > .card > .chart-container {
     min-height: 1100px !important;
 }
-/*
-#overallTotalResultsView {
-    min-height: 1100px !important;
-} */

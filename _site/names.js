@@ -1,3 +1,8 @@
+/*
+Filename: names.js
+Map of email/name
+*/
+
 const EmailToNameMap = {
     'almothanna@alghailani.com': 'المثنى الغيلاني',
     'hamzah503x@gmail.com': 'حمزة العقيل',

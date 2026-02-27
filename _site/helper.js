@@ -1,3 +1,7 @@
+/*
+Filename: helper.js
+Helper functionalities of seasons, dates, hijri/gregorian, duration and string conversions, ideas and calculations.
+*/
 function parseDate(dateString) {
   const [datePart, timePart] = dateString.split(" ");
   const [day, month, year] = datePart.split("/");

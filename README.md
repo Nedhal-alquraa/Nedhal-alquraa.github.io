@@ -59,6 +59,11 @@ The current architicture uses Google Sheets as a database, and loads the data us
 
 Mainly it is the bottleneck for loading time, with response time between 3-5 seconds.
 
+## Run locally
+```
+bundle exec jekyll serve
+```
+
 ## Calculations
 The main function `getParticipantsStats` which gets some rows of the database and calculates for each person exist in those rows the following information:
 - `streak`
