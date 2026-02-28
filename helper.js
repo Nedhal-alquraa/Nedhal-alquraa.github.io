@@ -287,7 +287,7 @@ const EXTRA_IDEAS = {
     'الجلسة النقاشية': 60
 };
 
-function getParticipantsStats(data) {
+function getParticipantsStats(data, extraNames=[]) {
     if (!data || data.length === 0) return [];
     
     const dayMs = 24 * 60 * 60 * 1000;
@@ -302,13 +302,34 @@ function getParticipantsStats(data) {
     const stats = {};
     data = data.sort((a, b) => (parseDate(a.timestamp)) - (parseDate(b.timestamp)));
     // Main processing loop
+    for (let i = 0; i < extraNames.length; i++) {
+        const idname = extraNames[i];
+        if (!stats[idname]) {
+            stats[idname] = {
+                name: idname,
+                totalIdeas: 0,
+                totalMinutes: 0,
+                streak: 0,
+                maxStreak: 0,
+                currentStreak: 0,
+                lastReadingDate: null,
+                lastReadingMinutes: 0,
+                extraIdeas: 0,
+                readingDays: new Set(),
+                dailyMinutes: {}, // Track minutes per day for subtraction calculation
+                subtraction: 0,
+                deserveDisqual: null
+            };
+        }
+    }
+
     for (let i = 0; i < data.length; i++) {
         const entry = data[i];
-        const email = emailToName(entry.email);
+        const idname = emailToName(entry.email);
         
-        if (!stats[email]) {
-            stats[email] = {
-                name: emailToName(email),
+        if (!stats[idname]) {
+            stats[idname] = {
+                name: idname,
                 totalIdeas: 0,
                 totalMinutes: 0,
                 streak: 0,
@@ -324,7 +345,7 @@ function getParticipantsStats(data) {
             };
         }
         
-        const stat = stats[email];
+        const stat = stats[idname];
         const entryDate = parseDate(entry.timestamp).toYMD();
         const entryDateObj = new Date(entryDate);
         const prevDate = new Date(entryDate);
@@ -371,8 +392,8 @@ function getParticipantsStats(data) {
     const asdf = new Date();
     asdf.setDate(asdf.getDate()-1);
     const yesterdayStrDate = asdf.toYMD();
-    Object.keys(stats).forEach(email => {
-        const stat = stats[email];
+    Object.keys(stats).forEach(idname => {
+        const stat = stats[idname];
         
         // Calculate streak
         stat.streak = (stat.dailyMinutes[yesterdayStrDate] || 0  >= 3) ? stat.currentStreak : 0; //calculateStreak(stat.readingDays);

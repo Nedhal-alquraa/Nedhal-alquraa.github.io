@@ -20,6 +20,14 @@ let currentSeason = null;
 let charts = {};
 let adminWarnings = [];
 
+let emailToNameMap = {};
+let nameToEmailMap = {};
+function emailToName(email) {
+    return emailToNameMap[email] ?? email.split('@')[0];
+}
+
+let seasonReacceptance = {};
+
 // Track current view mode in Current Results tab
 let currentResultsViewMode = 'total'; // 'total' or 'individual'
 let selectedParticipantEmail = null;
@@ -32,7 +40,7 @@ let overallMetricMode = 'ideas';
 let cachedCurrentSeasonParticipants = null;
 let cachedAllParticipants = null;
 
-const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbyS7Gc6LUC6XuI5wKSrTviq88wU38JpJFZ2uixtkClbx0zuS6cl8GG0uLQ_Jh3dh3_tfA';
+const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbzWNXymIhE5mkOtTE_GHLA_p7UD36dMXwGGiMJZdcf1hBNVEDuHkNM0SFUBk7uYOeRwUQ';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
 
 async function loadRawResponses() {
@@ -43,7 +51,7 @@ async function loadRawResponses() {
             console.error('Error:', result);
             alert("Error in loading data from Google, refresh the website again");
         }
-        return result.data;
+        return result;
     } catch (error) {
         console.error('Error:', error);
         alert("Error in loading data from Google, refresh the website again");
@@ -105,13 +113,42 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(loadData, 5 * 60 * 1000); // Update every 5 minutes
 });
 
+let allParticipants;
+
 // Load data from Google Sheets
 async function loadData() {
     try {
         const startLoading = new Date();
-        allData = await loadRawResponses();
+        const req = await loadRawResponses();
         const endRequest = new Date();
         console.log("Loading AppScript took:", (endRequest-startLoading)/1000);
+        allData = req.records;
+        // console.log(req);
+
+
+        for (let i = 0; i < req.participants.length; i++) {
+            emailToNameMap[req.participants[i].email] = req.participants[i].name.trim();
+            nameToEmailMap[req.participants[i].name.trim()] = req.participants[i].email;
+        }
+        allParticipants = req.participants;
+
+        // Reacceptance
+        for (let i = 0; i < req.reacceptance.length; i++) {
+            let szn = getSeasonFromDate(parseDate(req.reacceptance[i].timestamp));
+            if (!(szn in seasonReacceptance)) {
+                seasonReacceptance[szn] = [];
+            }
+            seasonReacceptance[szn].push(emailToName(req.reacceptance[i].name));
+        }
+        // asdfasdf = req.reacceptance;
+
+        /*
+        let sss = "";
+        asdfasdf.forEach(p => sss += nameToEmailMap[p.name.trim()] + "\n"); 
+        console.log(sss);
+        */
+        //console.log(seasonReacceptance);
+
         allData = allData.sort((a, b) => parseDate(a.timestamp) < parseDate(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
         currentSeason = getCurrentSeason();
@@ -121,7 +158,7 @@ async function loadData() {
 
         // Precalculate and cache participants stats
         const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === currentSeason);
-        cachedCurrentSeasonParticipants = getParticipantsStats(seasonData);
+        cachedCurrentSeasonParticipants = getParticipantsStats(seasonData, getSeasonParticipants(currentSeason));
         cachedAllParticipants = getParticipantsStats(allData);
 
         updateCurrentResults();
@@ -156,6 +193,27 @@ function checkData() {
         }
     });
 }
+
+
+// HELPER: 
+function getSeasonParticipants(season_name) {
+    let participants = seasonReacceptance[season_name] ?? [];
+
+    let prevSeason = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === nameBySeasonID(getSeasonID(season_name)-1));
+    let prevSeasonParticipants = getParticipantsStats(prevSeason);
+    prevSeasonParticipants.forEach(p => {
+        if (p.deserveDisqual == null)
+            participants.push(p.name);
+    });
+
+    for (let i = 0; i < allParticipants.length; i++) {
+        if (getSeasonFromDate(parseDate(allParticipants[i].timestamp)) == season_name) {
+            participants.push(allParticipants[i].name);
+        }
+    }
+    return participants;
+}
+
 
 // Show specific page
 function showPage(pageId) {
@@ -829,6 +887,11 @@ function renderSeasonalBreakdownChart(seasonalData) {
 let pub_currentResultsParticipants;
 // Update current results
 function updateCurrentResults() {
+    // TODO: Remove
+    console.log(currentSeason);
+    let currentSeasonParticipants = getSeasonParticipants(currentSeason);
+    console.log("Current season participants: ", currentSeasonParticipants);
+
     pub_currentResultsParticipants = cachedCurrentSeasonParticipants;
 
     // Ideas Chart
@@ -1007,7 +1070,8 @@ function updateCountdown() {
     const maxDays = Math.floor((endOfProtectedWeekNextSeason - (new Date())) /(1000*60*60*24) ); 
     const minDays = Math.floor((endOfProtectedWeekThisSeason - (new Date())) /(1000*60*60*24) ); 
     const countdownData = participants.map(p => {
-        const daysRemaining = Math.ceil(p.totalIdeas / 10);
+        let tot = p.totalIdeas ?? 0;
+        const daysRemaining = Math.ceil(tot / 10);
         return {
             ...p,
             daysRemaining: Math.min(maxDays, Math.max(daysRemaining, minDays)),
@@ -1015,6 +1079,8 @@ function updateCountdown() {
         };
     }).sort((a, b) => a.totalIdeas - b.totalIdeas).filter(p => p.totalIdeas > 0);
     
+
+
     tbody.innerHTML = '';
     countdownData.forEach((participant, index) => {
         const row = tbody.insertRow();
@@ -1069,7 +1135,7 @@ function updateExpelled() {
                         ${expelled.map(p => `
                             <tr>
                                 <td>${p.name}</td>
-                                <td>${p.expulsionDate}</td>
+                                <td>${p.expulsionDate} | ${dateToHijri(new Date(p.expulsionDate)).year}-${dateToHijri(new Date(p.expulsionDate)).month}-${dateToHijri(new Date(p.expulsionDate)).day}</td>
                                 <td>${p.reason}</td>
                             </tr>
                         `).join('')}
