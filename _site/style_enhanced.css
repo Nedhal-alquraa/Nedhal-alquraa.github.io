@@ -910,8 +910,8 @@ tr:hover {
     
     .calendar-cell {
         font-size: 0.6rem;
-        padding: 0.25rem;
-        min-height: 50px;
+        padding: 0.15rem;
+        min-height: 40px;
         border-radius: 4px;
     }
     
