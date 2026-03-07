@@ -291,7 +291,7 @@ const EXTRA_IDEAS = {
     'الجلسة النقاشية': 60
 };
 
-function getParticipantsStats(data, extraNames=[]) {
+function getParticipantsStats(data, extraNames=[], sortIt=false) {
     if (!data || data.length === 0) return [];
     
     const dayMs = 24 * 60 * 60 * 1000;
@@ -304,7 +304,8 @@ function getParticipantsStats(data, extraNames=[]) {
     
     // Initialize stats map
     const stats = {};
-    data = data.sort((a, b) => (parseDate(a.timestamp)) - (parseDate(b.timestamp)));
+    if (sortIt) 
+        data = data.sort((a, b) => (parseDate(a.timestamp)) - (parseDate(b.timestamp)));
     // Main processing loop
     for (let i = 0; i < extraNames.length; i++) {
         const idname = extraNames[i];

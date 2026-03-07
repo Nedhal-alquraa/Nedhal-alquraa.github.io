@@ -122,7 +122,7 @@ async function loadData() {
         const req = await loadRawResponses();
         const endRequest = new Date();
         console.log("Loading AppScript took:", (endRequest-startLoading)/1000);
-        allData = req.records;
+        allData = req.records.sort((a, b) => (parseDate(a.timestamp)) - (parseDate(b.timestamp)));
         // console.log(req);
 
 
@@ -212,6 +212,10 @@ function getSeasonParticipants(season_name) {
         }
     }
     return participants;
+}
+
+function getSeasonStats(season) {
+
 }
 
 
@@ -647,9 +651,11 @@ function updateOverallStreakChart(participants) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    autoSkip: false,
                     ticks: {
+                        display: true,
+                        autoSkip: false,
                         color: textColor,
+                        precision: 0,
                         font: {
                             family: 'Cairo'
                         }
@@ -657,6 +663,7 @@ function updateOverallStreakChart(participants) {
                     grid: { color: getChartGridColor() }
                 },
                 x: {
+                    autoSkip: false,
                     ticks: {
                         color: textColor,
                         font: {
@@ -952,6 +959,7 @@ function updateIdeasChart(participants) {
                 backgroundColor: isMinutes ? CHART_BACKGROUND_COLOR2 : CHART_BACKGROUND_COLOR,
                 barPercentage: 1.0,
                 categoryPercentage: 0.7,
+                maxBarThickness: 100,
                 borderColor: isMinutes ? CHART_BORDER_COLOR2 : CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
@@ -997,6 +1005,7 @@ function updateIdeasChart(participants) {
                     grid: { color: getChartGridColor() }
                 },
                 x: {
+                    maxBarThickness: 2,
                     type: 'logarithmic',
                     ticks: {
                         color: textColor,
@@ -1032,6 +1041,7 @@ function updateStreakChart(participants) {
                 backgroundColor: CHART_BACKGROUND_COLOR,
                 borderColor: CHART_BORDER_COLOR,
                 borderWidth: 2,
+                maxBarThickness: 100,
                 borderRadius: 8
             }]
         },
@@ -1050,13 +1060,24 @@ function updateStreakChart(participants) {
                     }
                 },
                 datalabels: {
-                    display: false
+                    color: '#ffffff',
+                    anchor: 'end',
+                    offset: 0,
+                    font: {
+                        family: 'Cairo',
+                        size: 12
+                    },
+                    formatter: (value) => Math.round(value)
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
+                    maxBarThickness: 20,
                     ticks: {
+                        precision: 0,
+                        autoSkip: false,
+                        display: true,
                         color: textColor,
                         font: {
                             family: 'Cairo'
@@ -1066,6 +1087,7 @@ function updateStreakChart(participants) {
                 },
                 x: {
                     ticks: {
+                        precision: 0,
                         color: textColor,
                         font: {
                             family: 'Cairo'
@@ -1113,7 +1135,7 @@ function updateCountdown() {
             </div>
             </td>
             <td><span class="status-indicator status-${participant.status}">${getStatusText(participant.status)}</span></td>
-            <td>${participant.totalIdeas.toFixed(1)}</td>
+            <td>${participant.totalIdeas.toFixed(0)}</td>
         `;
     });
 }
@@ -1227,7 +1249,7 @@ function updateRecords() {
 function updateseasonsComparisonStats() {
     const seasons = getAllSeasons();
     const participants = [...new Set(allData.map(d => emailToName(d.email)))];
-    const participantsStats = getParticipantsStats(allData);
+    const participantsStats = cachedAllParticipants;
     const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
     const avgIdeas = totalIdeas / participants.length;
     
