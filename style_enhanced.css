@@ -909,22 +909,22 @@ tr:hover {
     }
     
     .calendar-cell {
-        font-size: 0.6rem;
-        padding: 0.15rem;
-        min-height: 40px;
+        font-size: 0.5rem;
+        padding: 0.12rem;
+        min-height: 30px;
         border-radius: 4px;
     }
     
     .cell-day {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
     }
     
     .cell-ideas {
-        font-size: 0.7rem;
+        font-size: 0.6rem;
     }
     
     .cell-minutes {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
     }
     
     .weekday-label {
