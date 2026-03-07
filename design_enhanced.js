@@ -435,11 +435,11 @@ function renderCalendarHeatmap(participant, seasonName) {
         
         html += `
             <div class="calendar-cell ${isToday ? 'today' : ''}" style="background-color: ${color};">
-                <div class="cell-day">${day}</div>
                 ${minutes > 0 ? `
                     <div class="cell-ideas">${ideas.toFixed(0)}</div>
+                    <div class="cell-day">${day}</div>
                     <div class="cell-minutes">${Math.round(minutes)}د</div>
-                ` : ''}
+                ` : `<div class="cell-day">${day}</div>`}
             </div>
         `;
     }
@@ -634,12 +634,20 @@ function updateOverallStreakChart(participants) {
                     }
                 },
                 datalabels: {
-                    display: false
+                    color: '#ffffff',
+                    anchor: 'end',
+                    offset: 0,
+                    font: {
+                        family: 'Cairo',
+                        size: 12
+                    },
+                    formatter: (value) => Math.round(value)
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
+                    autoSkip: false,
                     ticks: {
                         color: textColor,
                         font: {

@@ -812,6 +812,15 @@ tr:hover {
     border-bottom: none;
 }
 
+#seasonsComparisonStats.stats-grid {
+    grid-template-columns: 25% 25% 25% 25% !important;
+    gap: 0 !important;
+}
+
+#seasonsComparisonStats.stats-grid > .stat-card {
+    margin: 10px !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -840,7 +849,12 @@ tr:hover {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 1rem;
     }
-    
+
+    #seasonsComparisonStats.stats-grid {
+        grid-template-columns: 50% 50% !important;
+        gap: 0 !important;
+    }
+
     .chart-container {
         height: 350px;
         min-height: 300px;
@@ -1029,3 +1043,4 @@ body.night-mode .status-danger {
 #overallTotalResultsView > .card > .chart-container {
     min-height: 1100px !important;
 }
+
