@@ -763,8 +763,8 @@ tr:hover {
 
 /* Countdown Timer */
 .countdown {
-    display: flex;
-    align-items: center;
+    /* display: flex;
+    align-items: center; */
     gap: 0.5rem;
     color: var(--danger);
     font-weight: 600;

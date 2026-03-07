@@ -67,12 +67,12 @@
                         <h2><i class="fas fa-lightbulb"></i> ترتيب قراء الموسم الحالي</h2>
                         <!-- Metric Switch: Ideas / Minutes -->
                         <div class="metric-switch">
-                            <span class="toggle-label">أفكار</span>
+                            <span class="toggle-label">دقائق</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="currentMetricToggle" onchange="toggleCurrentMetric(this.checked ? 'minutes' : 'ideas')">
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label">دقائق</span>
+                            <span class="toggle-label">أفكار</span>
                         </div>
                         <div class="chart-container">
                             <canvas id="ideasChart"></canvas>
@@ -184,12 +184,12 @@
                         <h2><i class="fas fa-chart-bar"></i> ترتيب المشاركين حسب إجمالي الأفكار</h2>
                         <!-- Metric Switch: Ideas / Minutes -->
                         <div class="metric-switch">
-                            <span class="toggle-label">أفكار</span>
+                            <span class="toggle-label">دقائق</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="overallMetricToggle" onchange="toggleOverallMetric(this.checked ? 'minutes' : 'ideas')">
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label">دقائق</span>
+                            <span class="toggle-label">أفكار</span>
                         </div>
                         <div class="chart-container">
                             <canvas id="overallIdeasChart"></canvas>
@@ -238,7 +238,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     
     <!-- Include your JavaScript files -->
-    <script src="names.js"></script>
+    <!-- <script src="names.js"></script> -->
     <script src="helper.js"></script>
     <script src="design_enhanced.js"></script>
 </body>

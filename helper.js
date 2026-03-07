@@ -273,6 +273,10 @@ function formatTime(minutes) {
     return `${hours}:${mins.toString().padStart(2, '0')}`;
 }
 
+function formatTimeAgo(minutes) {
+    return ``
+}
+
 // Format date
 function formatDate(date) {
     return date.toISOString().split('T')[0];
@@ -486,10 +490,30 @@ function getTimeAgo(dateString) {
     
     if (diffDays === 1) return 'أمس';
     if (diffDays === 0) return 'اليوم';
+    if (diffDays === 2) return 'يومين';
     if (diffDays <= 7) return `منذ ${diffDays} أيام`;
+    if (Math.ceil(diffDays / 7) == 1) return `منذ أسبوع`;
+    if (Math.ceil(diffDays / 7) == 2) return `منذ أسبوعين`;
     if (diffDays <= 30) return `منذ ${Math.ceil(diffDays / 7)} أسابيع`;
+    if (Math.ceil(diffDays / 30) === 1) return `منذ شهر`;
+    if (Math.ceil(diffDays / 30) === 2) return `منذ شهرين`;
     return `منذ ${Math.ceil(diffDays / 30)} شهور`;
 }
+
+function getDaysPlural(diffDays) {
+    if (diffDays === 1) return 'يوم';
+    if (diffDays === 2) return 'يومان';
+    if (diffDays <= 10) return `${diffDays} أيام`;
+    return `${diffDays} يوم`;
+}
+
+function getIdeasPlural(ideas) {
+    if (ideas === 1) return 'فكرة';
+    if (ideas === 2) return 'فكرتان';
+    if (ideas <= 10) return `${ideas} أفكار`;
+    return `${ideas} فكرة`;
+}
+
 
 // -- Cookie Utils --
 function setCookie(name, value, daysToExpire) {

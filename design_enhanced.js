@@ -533,10 +533,10 @@ function updateOverallIdeasChart(participants) {
             datasets: [{
                 label: isMinutes ? 'إجمالي الدقائق' : 'إجمالي الأفكار',
                 data: sortedParticipants.map(p => isMinutes ? p.totalMinutes : p.totalIdeas),
-                backgroundColor: CHART_BACKGROUND_COLOR,
+                backgroundColor: isMinutes ? CHART_BACKGROUND_COLOR2 : CHART_BACKGROUND_COLOR,
                 barPercentage: 1.0,
                 categoryPercentage: 0.7,
-                borderColor: CHART_BORDER_COLOR,
+                borderColor: isMinutes ? CHART_BORDER_COLOR2 : CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -708,9 +708,8 @@ function displayOverallIndividualResults(participantName, participants) {
     const streakFactor = participant.maxStreak >= 3 ? 1.2 : participant.maxStreak >= 2 ? 1.15 : 1;
     const readingIdeasBeforeFactor = readingIdeas / streakFactor;
     
-    // Get participant's data by season for the chart
-    const participantEmail = Object.keys(EMAIL_TO_NAME).find(email => EMAIL_TO_NAME[email] === participantName);
-    const participantSeasonalData = getParticipantSeasonalBreakdown(participantEmail || participantName);
+    // Get participant's data by season for the chart   
+    const participantSeasonalData = getParticipantSeasonalBreakdown(participantName);
     
     const detailsContainer = document.getElementById('overallParticipantDetails');
     detailsContainer.innerHTML = `
@@ -724,6 +723,16 @@ function displayOverallIndividualResults(participantName, participants) {
                         <span class="info-value success-text">${totalReadingDays}</span>
                     </div>
                     <div class="info-item">
+                        <span class="info-label">إجمالي ساعات القراءة</span>
+                        <span class="info-value success-text">${formatTime(Math.floor(participant.totalMinutes))}</span>
+                    </div>
+                    <!-- TODO
+                    <div class="info-item">
+                        <span class="info-label">عدد المواسم</span>
+                        <span class="info-value success-text">${formatTime(participant.totalMinutes)}</span>
+                    </div>
+                    -->
+                    <div class="info-item">
                         <span class="info-label">متوسط القراءة يومياً</span>
                         <span class="info-value">${formatTime(Math.round(avgReadingPerDay))}</span>
                     </div>
@@ -734,7 +743,8 @@ function displayOverallIndividualResults(participantName, participants) {
                 </div>
             </div>
             
-            <!-- Invoice -->
+            <!-- Invoice [DELETED] -->
+            <!--
             <div class="invoice-section">
                 <h3><i class="fas fa-file-invoice"></i> فاتورة الأفكار الإجمالية</h3>
                 <div class="invoice-table-compact">
@@ -760,6 +770,7 @@ function displayOverallIndividualResults(participantName, participants) {
                     </div>
                 </div>
             </div>
+            -->
             
             <!-- Seasonal Breakdown Chart -->
             <div class="calendar-section">
@@ -833,6 +844,7 @@ function renderSeasonalBreakdownChart(seasonalData) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            indexAxis: 'y',
             plugins: {
                 legend: {
                     labels: {
@@ -929,10 +941,10 @@ function updateIdeasChart(participants) {
             datasets: [{
                 label: isMinutes ? 'إجمالي الدقائق' : 'إجمالي الأفكار',
                 data: sortedParticipants.map(p => isMinutes ? p.totalMinutes : p.totalIdeas),
-                backgroundColor: CHART_BACKGROUND_COLOR,
+                backgroundColor: isMinutes ? CHART_BACKGROUND_COLOR2 : CHART_BACKGROUND_COLOR,
                 barPercentage: 1.0,
                 categoryPercentage: 0.7,
-                borderColor: CHART_BORDER_COLOR,
+                borderColor: isMinutes ? CHART_BORDER_COLOR2 : CHART_BORDER_COLOR,
                 borderWidth: 2,
                 borderRadius: 8
             }]
@@ -1089,7 +1101,7 @@ function updateCountdown() {
             <td>
             <div class="countdown ${participant.status}">
             <i class="fas fa-clock"></i>
-            ${participant.daysRemaining} يوم
+            ${getDaysPlural(participant.daysRemaining)}
             </div>
             </td>
             <td><span class="status-indicator status-${participant.status}">${getStatusText(participant.status)}</span></td>
@@ -1176,7 +1188,7 @@ function updateRecords() {
             ${topDuration.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${formatTime(record.minutes)} ساعة</span>
+                    <span>${formatTime(record.minutes)} ${Math.round(record.minutes/60) <= 10 ? "ساعات" : "ساعة"}</span>
                 </div>
             `).join('')}
         </div>
@@ -1186,7 +1198,7 @@ function updateRecords() {
             ${topStreak.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${record.maxStreak} يوم متتالي</span>
+                    <span>${getDaysPlural(record.maxStreak)}</span>
                 </div>
             `).join('')}
         </div>
@@ -1196,7 +1208,7 @@ function updateRecords() {
             ${topIdeas.map((record, index) => `
                 <div class="record-item">
                     <span><span class="rank-badge ${index < 3 ? 'rank-' + (index + 1) : 'rank-other'}">${index + 1}</span> ${record.name}</span>
-                    <span>${Math.round(record.totalIdeas)} فكرة</span>
+                    <span>${getIdeasPlural(Math.round(record.totalIdeas))}</span>
                 </div>
             `).join('')}
         </div>
@@ -1213,11 +1225,11 @@ function updateseasonsComparisonStats() {
     
     const seasonStats = seasons.map(season => {
         const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === season);
-        const participantsStats = getParticipantsStats(seasonData);
+        const participantsStats = getParticipantsStats(seasonData, getSeasonParticipants(season));
         const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
         const totalMinutes = seasonData.reduce((sum, d) => sum + (durationToMinutes(d.hours) || 0), 0);
         const countExpelled = participantsStats.reduce((sum, d) => sum + (d.deserveDisqual !== null ? 1 : 0), 0);
-        const uniqueParticipants = new Set(seasonData.map(d => emailToName(d.email))).size;
+        const uniqueParticipants = participantsStats.length;
         
         return {
             season,
@@ -1230,18 +1242,20 @@ function updateseasonsComparisonStats() {
         };
     });
 
+    console.log(seasonStats);
+
     const statsContainer = document.getElementById('seasonsComparisonStats');
     statsContainer.innerHTML = `
         <div class="stat-card">
             <h3>${participants.length}</h3>
-            <p>إجمالي المشاركين</p>
+            <p>إجمالي المشاركين الفعليين</p>
         </div>
         <div class="stat-card">
-            <h3>${totalIdeas.toFixed(1)}</h3>
-            <p>إجمالي الأفكار المحققة</p>
+            <h3>${Math.round(totalIdeas / 60)}</h3>
+            <p>إجمالي ساعات الأفكار</p>
         </div>
         <div class="stat-card">
-            <h3>${avgIdeas.toFixed(1)}</h3>
+            <h3>${Math.round(avgIdeas)}</h3>
             <p>متوسط الأفكار لكل مشارك</p>
         </div>
         <div class="stat-card">
