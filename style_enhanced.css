@@ -512,10 +512,9 @@ body.night-mode .calendar-section h3 {
 }
 
 .calendar-cell {
-    aspect-ratio: 1;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.3rem;
+    padding: 0.2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -523,7 +522,8 @@ body.night-mode .calendar-section h3 {
     font-size: 0.7rem;
     transition: all 0.2s ease;
     position: relative;
-    min-height: 60px;
+    min-height: 50px;
+    overflow: hidden;
 }
 
 .calendar-cell:hover {
@@ -546,13 +546,15 @@ body.night-mode .calendar-section h3 {
 .cell-day {
     font-weight: 700;
     font-size: 0.85rem;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
+    line-height: 1;
 }
 
 .cell-ideas {
     font-weight: 600;
     color: var(--primary-color);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.1;
 }
 
 body.night-mode .cell-ideas {
@@ -560,8 +562,9 @@ body.night-mode .cell-ideas {
 }
 
 .cell-minutes {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--text-secondary);
+    line-height: 1.1;
 }
 
 /* Calendar Legend */
@@ -924,21 +927,26 @@ tr:hover {
     
     .calendar-cell {
         font-size: 0.5rem;
-        padding: 0.07rem;
-        min-height: 30px;
+        padding: 0.1rem;
+        min-height: 40px;
         border-radius: 4px;
+        overflow: hidden;
     }
     
     .cell-day {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
+        margin-bottom: 0;
+        line-height: 1;
     }
     
     .cell-ideas {
-        font-size: 0.6rem;
+        font-size: 0.5rem;
+        line-height: 1;
     }
     
     .cell-minutes {
-        font-size: 0.55rem;
+        font-size: 0.45rem;
+        line-height: 1;
     }
     
     .weekday-label {
@@ -1043,4 +1051,3 @@ body.night-mode .status-danger {
 #overallTotalResultsView > .card > .chart-container {
     min-height: 1100px !important;
 }
-
