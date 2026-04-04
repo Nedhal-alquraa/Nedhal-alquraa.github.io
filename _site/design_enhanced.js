@@ -865,7 +865,6 @@ function renderSeasonalBreakdownChart(seasonalData) {
                 datalabels: {
                     color: '#ffffff',
                     anchor: 'end',
-                    align: 'top',
                     font: {
                         family: 'Cairo',
                         size: 11,
