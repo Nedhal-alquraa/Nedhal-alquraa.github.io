@@ -84,6 +84,40 @@
         body.night-mode .year-pagination .year-dot.active {
             background: #a0aec0;
         }
+
+        /* Screenshot button */
+        .screenshot-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            margin: 1.5rem auto 0;
+            padding: 0.5rem 1.2rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .screenshot-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        }
+        .screenshot-btn:active {
+            transform: translateY(0);
+        }
+        .screenshot-btn i {
+            font-size: 0.9rem;
+        }
+        .screenshot-btn.capturing {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -211,6 +245,9 @@
                     <div class="records-grid" id="recordsGrid">
                         <!-- Records will be populated by JavaScript -->
                     </div>
+                    <button class="screenshot-btn" id="recordsScreenshotBtn" onclick="captureRecords()">
+                        <i class="fas fa-camera"></i> حفظ كصورة
+                    </button>
                 </div>
             </div>
 
@@ -318,6 +355,8 @@
     <!-- Include Chart.js and plugins -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <!-- html2canvas for screenshot -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     
     <!-- Include your JavaScript files -->
     <!-- <script src="names.js"></script> -->
