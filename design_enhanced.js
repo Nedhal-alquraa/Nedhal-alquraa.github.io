@@ -40,6 +40,13 @@ let overallMetricMode = 'ideas';
 let cachedCurrentSeasonParticipants = null;
 let cachedAllParticipants = null;
 
+// ========== YEAR PAGINATION CACHE ==========
+// Cached once per data load, reused on every page switch
+let cachedAllSeasonStats = null;        // Full array of season stat objects
+let cachedSeasonStatsByYear = {};       // { hijriYear: [seasonStat, ...] }
+let cachedAvailableYears = [];          // Sorted array of hijri year numbers
+let currentComparisonYear = null;       // Currently displayed hijri year
+
 const GOOGLE_APP_SCRIPT_API_VERSION = 'AKfycbzWNXymIhE5mkOtTE_GHLA_p7UD36dMXwGGiMJZdcf1hBNVEDuHkNM0SFUBk7uYOeRwUQ';
 const GOOGLE_APP_SCRIPT_URL = `https://script.google.com/macros/s/${GOOGLE_APP_SCRIPT_API_VERSION}/exec`;
 
@@ -140,14 +147,6 @@ async function loadData() {
             }
             seasonReacceptance[szn].push(emailToName(req.reacceptance[i].name));
         }
-        // asdfasdf = req.reacceptance;
-
-        /*
-        let sss = "";
-        asdfasdf.forEach(p => sss += nameToEmailMap[p.name.trim()] + "\n"); 
-        console.log(sss);
-        */
-        //console.log(seasonReacceptance);
 
         allData = allData.sort((a, b) => parseDate(a.timestamp) < parseDate(b.timestamp));
         console.log(`Loaded ${allData.length} rows`);
@@ -518,7 +517,17 @@ function updateOverallResults() {
 
 // Update Overall Ideas Chart
 function updateOverallIdeasChart(participants) {
-    const ctx = document.getElementById('overallIdeasChart').getContext('2d');
+    const ctx = document.getElementById('overallIdeasChart');
+    if (!ctx) {
+        // Fallback: try the alternative ID used in HTML
+        const ctx2 = document.getElementById('overall_ideasChart');
+        if (!ctx2) return;
+        return updateOverallIdeasChartWithCtx(ctx2.getContext('2d'), participants);
+    }
+    updateOverallIdeasChartWithCtx(ctx.getContext('2d'), participants);
+}
+
+function updateOverallIdeasChartWithCtx(ctx, participants) {
     const isMinutes = overallMetricMode === 'minutes';
     const sortedParticipants = [...participants].sort((a, b) => {
         return isMinutes ? b.totalMinutes - a.totalMinutes : b.totalIdeas - a.totalIdeas;
@@ -601,7 +610,12 @@ function updateOverallIdeasChart(participants) {
 
 // Update Overall Streak Chart
 function updateOverallStreakChart(participants) {
-    const ctx = document.getElementById('overallStreakChart').getContext('2d');
+    let ctx = document.getElementById('overallStreakChart');
+    if (!ctx) {
+        ctx = document.getElementById('overall_streakChart');
+        if (!ctx) return;
+    }
+    const context = ctx.getContext('2d');
     const sortedParticipants = [...participants].sort((a, b) => b.maxStreak - a.maxStreak).filter(p => p.maxStreak > 0);
     
     if (charts.overallStreak) {
@@ -610,7 +624,7 @@ function updateOverallStreakChart(participants) {
     
     const textColor = getChartTextColor();
     
-    charts.overallStreak = new Chart(ctx, {
+    charts.overallStreak = new Chart(context, {
         type: 'bar',
         data: {
             labels: sortedParticipants.map(p => p.name),
@@ -726,6 +740,13 @@ function displayOverallIndividualResults(participantName, participants) {
     // Get participant's data by season for the chart   
     const participantSeasonalData = getParticipantSeasonalBreakdown(participantName);
     
+    let seasonsCount = 0;
+    for (let i = 0; i < participantSeasonalData.length; i++) {
+        if (participantSeasonalData[i].ideas > 0) {
+            seasonsCount++;
+        }
+    }
+
     const detailsContainer = document.getElementById('overallParticipantDetails');
     detailsContainer.innerHTML = `
         <div class="individual-results-container">
@@ -741,12 +762,12 @@ function displayOverallIndividualResults(participantName, participants) {
                         <span class="info-label">إجمالي ساعات القراءة</span>
                         <span class="info-value success-text">${formatTime(Math.floor(participant.totalMinutes))}</span>
                     </div>
-                    <!-- TODO
+                    
                     <div class="info-item">
                         <span class="info-label">عدد المواسم</span>
-                        <span class="info-value success-text">${formatTime(participant.totalMinutes)}</span>
+                        <span class="info-value success-text">${seasonsCount}</span>
                     </div>
-                    -->
+                    
                     <div class="info-item">
                         <span class="info-label">متوسط القراءة يومياً</span>
                         <span class="info-value">${formatTime(Math.round(avgReadingPerDay))}</span>
@@ -757,35 +778,6 @@ function displayOverallIndividualResults(participantName, participants) {
                     </div>
                 </div>
             </div>
-            
-            <!-- Invoice [DELETED] -->
-            <!--
-            <div class="invoice-section">
-                <h3><i class="fas fa-file-invoice"></i> فاتورة الأفكار الإجمالية</h3>
-                <div class="invoice-table-compact">
-                    <div class="invoice-row-compact">
-                        <span class="invoice-label">أفكار القراءة</span>
-                        <span class="invoice-value">${readingIdeasBeforeFactor.toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row-compact">
-                        <span class="invoice-label">الأفكار الإضافية</span>
-                        <span class="invoice-value success-text">+${participant.extraIdeas.toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row-compact">
-                        <span class="invoice-label">إجمالي الخصومات</span>
-                        <span class="invoice-value danger-text">-${participant.subtraction.toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row-compact">
-                        <span class="invoice-label">عامل الاستمرارية</span>
-                        <span class="invoice-value">×${streakFactor.toFixed(2)}</span>
-                    </div>
-                    <div class="invoice-row-compact invoice-total-compact">
-                        <span class="invoice-label"><strong>الإجمالي النهائي</strong></span>
-                        <span class="invoice-value"><strong>${participant.totalIdeas.toFixed(2)}</strong></span>
-                    </div>
-                </div>
-            </div>
-            -->
             
             <!-- Seasonal Breakdown Chart -->
             <div class="calendar-section">
@@ -874,7 +866,6 @@ function renderSeasonalBreakdownChart(seasonalData) {
                     color: '#ffffff',
                     anchor: 'end',
                     align: 'top',
-                    offset: -5,
                     font: {
                         family: 'Cairo',
                         size: 11,
@@ -888,6 +879,8 @@ function renderSeasonalBreakdownChart(seasonalData) {
                     beginAtZero: true,
                     ticks: {
                         color: textColor,
+                        ticks: true,
+                        autoSkip: false,
                         font: {
                             family: 'Cairo'
                         }
@@ -1245,15 +1238,19 @@ function updateRecords() {
     `;
 }
 
-// Update seasonsComparison statistics
-function updateseasonsComparisonStats() {
+// ========== SEASONS COMPARISON WITH YEAR PAGINATION ==========
+
+// Extract hijri year from season name like "محرم 1446" -> 1446
+function getYearFromSeasonName(seasonName) {
+    const parts = seasonName.split(' ');
+    return parseInt(parts[parts.length - 1]);
+}
+
+// Build the full seasonStats array once, cache it, then group by year
+function buildAndCacheSeasonStats() {
     const seasons = getAllSeasons();
-    const participants = [...new Set(allData.map(d => emailToName(d.email)))];
-    const participantsStats = cachedAllParticipants;
-    const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
-    const avgIdeas = totalIdeas / participants.length;
     
-    const seasonStats = seasons.map(season => {
+    const allSeasonStats = seasons.map(season => {
         const seasonData = allData.filter(d => getSeasonFromDate(parseDate(d.timestamp)) === season);
         const participantsStats = getParticipantsStats(seasonData, getSeasonParticipants(season));
         const totalIdeas = participantsStats.reduce((sum, d) => sum + (d.totalIdeas || 0), 0);
@@ -1268,39 +1265,138 @@ function updateseasonsComparisonStats() {
             countExpelled,
             participants: uniqueParticipants,
             avgMinutes: totalMinutes / uniqueParticipants || 0,
-            avgIdeas: totalIdeas / uniqueParticipants || 0
+            avgIdeas: totalIdeas / uniqueParticipants || 0,
+            hijriYear: getYearFromSeasonName(season)
         };
     });
+    
+    // Cache the full array
+    cachedAllSeasonStats = allSeasonStats;
+    
+    // Group by hijri year
+    cachedSeasonStatsByYear = {};
+    for (let i = 0; i < allSeasonStats.length; i++) {
+        const stat = allSeasonStats[i];
+        if (!cachedSeasonStatsByYear[stat.hijriYear]) {
+            cachedSeasonStatsByYear[stat.hijriYear] = [];
+        }
+        cachedSeasonStatsByYear[stat.hijriYear].push(stat);
+    }
+    
+    // Sorted list of available years
+    cachedAvailableYears = Object.keys(cachedSeasonStatsByYear).map(Number).sort((a, b) => a - b);
+    
+    // Default to the latest year
+    if (!currentComparisonYear || !cachedAvailableYears.includes(currentComparisonYear)) {
+        currentComparisonYear = cachedAvailableYears[cachedAvailableYears.length - 1];
+    }
+}
 
-    console.log(seasonStats);
+// Render year pagination controls
+function renderYearPagination() {
+    const container = document.getElementById('yearPagination');
+    if (!container || cachedAvailableYears.length === 0) return;
+    
+    const currentIdx = cachedAvailableYears.indexOf(currentComparisonYear);
+    const isFirst = currentIdx === 0;
+    const isLast = currentIdx === cachedAvailableYears.length - 1;
+    
+    let dotsHtml = '';
+    for (let i = 0; i < cachedAvailableYears.length; i++) {
+        const yr = cachedAvailableYears[i];
+        dotsHtml += `<div class="year-dot ${yr === currentComparisonYear ? 'active' : ''}" 
+                          onclick="navigateToYear(${yr})" title="${yr} هـ"></div>`;
+    }
+    
+    container.innerHTML = `
+        <button class="year-btn" onclick="navigateYear(-1)" ${isFirst ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="year-dots">${dotsHtml}</div>
+        <span class="year-title">${currentComparisonYear} هـ</span>
+        <button class="year-btn" onclick="navigateYear(1)" ${isLast ? 'disabled' : ''}>
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+}
 
+// Navigate by delta (-1 or +1)
+function navigateYear(delta) {
+    const currentIdx = cachedAvailableYears.indexOf(currentComparisonYear);
+    const newIdx = currentIdx + delta;
+    if (newIdx >= 0 && newIdx < cachedAvailableYears.length) {
+        currentComparisonYear = cachedAvailableYears[newIdx];
+        renderYearPagination();
+        renderSeasonsComparisonForYear(currentComparisonYear);
+    }
+}
+
+// Navigate directly to a specific year
+function navigateToYear(year) {
+    if (cachedAvailableYears.includes(year)) {
+        currentComparisonYear = year;
+        renderYearPagination();
+        renderSeasonsComparisonForYear(currentComparisonYear);
+    }
+}
+
+// Render stats, chart, and table for a specific year using cached data
+function renderSeasonsComparisonForYear(hijriYear) {
+    const yearStats = cachedSeasonStatsByYear[hijriYear] || [];
+    
+    // Aggregate stats for this year
+    const allUniqueParticipantsThisYear = new Set();
+    let totalIdeasYear = 0;
+    let totalMinutesYear = 0;
+    
+    for (let i = 0; i < yearStats.length; i++) {
+        totalIdeasYear += yearStats[i].totalIdeas;
+        totalMinutesYear += yearStats[i].totalMinutes;
+        // We approximate unique participants by summing (not truly unique across seasons, 
+        // but consistent with original logic which also counted per-season)
+    }
+    
+    // For unique participant count, we gather from raw data for this year's seasons
+    const yearSeasonNames = new Set(yearStats.map(s => s.season));
+    const yearParticipants = new Set();
+    allData.forEach(d => {
+        const season = getSeasonFromDate(parseDate(d.timestamp));
+        if (yearSeasonNames.has(season)) {
+            yearParticipants.add(emailToName(d.email));
+        }
+    });
+    
+    const participantCount = yearParticipants.size;
+    const avgIdeas = participantCount > 0 ? totalIdeasYear / participantCount : 0;
+    
+    // Update stat cards
     const statsContainer = document.getElementById('seasonsComparisonStats');
     statsContainer.innerHTML = `
         <div class="stat-card">
-            <h3>${participants.length}</h3>
+            <h3>${participantCount}</h3>
             <p>إجمالي المشاركين الفعليين</p>
         </div>
         <div class="stat-card">
-            <h3>${Math.round(totalIdeas / 60)}</h3>
-            <p>إجمالي ساعات الأفكار</p>
+            <h3>${Math.round(totalMinutesYear / 60)}</h3>
+            <p>إجمالي ساعات القراءة</p>
         </div>
         <div class="stat-card">
             <h3>${Math.round(avgIdeas)}</h3>
             <p>متوسط الأفكار لكل مشارك</p>
         </div>
         <div class="stat-card">
-            <h3>${seasons.length}</h3>
+            <h3>${yearStats.length}</h3>
             <p>عدد المواسم</p>
         </div>
     `;
-
-    // Update seasons comparison chart
-    updateSeasonsChart(seasonStats);
-
-    // Updating the table
+    
+    // Update chart
+    updateSeasonsChart(yearStats);
+    
+    // Update table
     const tbody = document.getElementById('seasonsTableBody');
-    tbody.innerHTML = "";
-    seasonStats.forEach((season, index) => {
+    tbody.innerHTML = '';
+    yearStats.forEach(season => {
         const row = tbody.insertRow();
         row.innerHTML = `
             <td>${season.season}</td>
@@ -1308,6 +1404,19 @@ function updateseasonsComparisonStats() {
             <td>${season.countExpelled}</td>
         `;
     });
+}
+
+// Update seasonsComparison statistics (entry point called from loadData)
+function updateseasonsComparisonStats() {
+    // Build and cache all season stats, grouped by year
+    buildAndCacheSeasonStats();
+    
+    console.log("Season stats cached. Years:", cachedAvailableYears);
+    console.log(cachedSeasonStatsByYear);
+    
+    // Render pagination and display current year
+    renderYearPagination();
+    renderSeasonsComparisonForYear(currentComparisonYear);
 }
 
 // Update seasons comparison chart

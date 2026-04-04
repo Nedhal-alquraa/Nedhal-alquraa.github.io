@@ -291,7 +291,7 @@ const EXTRA_IDEAS = {
     'الجلسة النقاشية': 60
 };
 
-function getParticipantsStats(data, extraNames=[], sortIt=false) {
+function getParticipantsStats(data, extraNames=[], sortIt=true) {
     if (!data || data.length === 0) return [];
     
     const dayMs = 24 * 60 * 60 * 1000;

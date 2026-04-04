@@ -6,6 +6,85 @@
     <title>نضال القراء</title>
     <link rel="stylesheet" href="style_enhanced.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Year pagination styles */
+        .year-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem 1rem;
+            direction: ltr;
+        }
+        .year-pagination .year-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary, #2563eb);
+            min-width: 110px;
+            text-align: center;
+            font-family: 'Cairo', sans-serif;
+            user-select: none;
+        }
+        .year-pagination .year-btn {
+            background: var(--primary, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .year-pagination .year-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        }
+        .year-pagination .year-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .year-pagination .year-dots {
+            display: flex;
+            gap: 0.45rem;
+            align-items: center;
+        }
+        .year-pagination .year-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border, #e2e8f0);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .year-pagination .year-dot.active {
+            background: var(--primary, #2563eb);
+            transform: scale(1.35);
+        }
+        .year-pagination .year-dot:hover:not(.active) {
+            background: var(--text-muted, #94a3b8);
+        }
+
+        body.night-mode .year-pagination .year-title {
+            color: #a0aec0;
+        }
+        body.night-mode .year-pagination .year-btn {
+            background: #2d3748;
+            color: #a0aec0;
+        }
+        body.night-mode .year-pagination .year-dot {
+            background: #4a5568;
+        }
+        body.night-mode .year-pagination .year-dot.active {
+            background: #a0aec0;
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -137,6 +216,9 @@
 
             <!-- Seasons Comparison Page -->
             <div id="seasonsComparison" class="page">
+                <!-- Year Pagination -->
+                <div class="year-pagination" id="yearPagination"></div>
+
                 <div class="card">
                     <h2><i class="fas fa-calendar-alt"></i> مقارنة المواسم</h2>
                     <div class="stats-grid" id="seasonsComparisonStats">
